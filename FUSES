@@ -1,0 +1,2 @@
+# Brown out 2.7V external clock
+avrdude -c dragon_isp -P usb -p m8 -U lfuse:w:0xA0:m -U hfuse:w:0xd1:m

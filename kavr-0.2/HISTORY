@@ -1,0 +1,25 @@
+Bugs/Enhancements?
+==================
+
+kavr is open source software. It's licensed under GPL. The latest source 
+code is available on Sourceforge (http://kavr.sourceforge.net).
+Please report any problems or feedback any proposals for enhancement using
+the Sourceforge tracker system.
+
+
+
+Release 0.2 (12/01/2009)
+========================
+
+- Added FIFO extension proposed by Thomas Klickermann. Thanks, Thomas!
+- Added "KAVR" boot message after reset
+- Now sending XOFF before launching the application
+- Replaced stdlib init code with custom init code
+- Many changes all over the place for further reducing code size
+  (now at 498 bytes with Atmega8)
+
+
+Release 0.1 (9/26/2009)
+=======================
+
+- Initial alpha release
