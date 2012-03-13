@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include "can_routines.h"
 #include "protocol.h"
@@ -62,6 +63,31 @@ void can_status_relais(void)
 	uart_put_can_msg(&msg);
 }
 
+void can_status_relais_eeprom(void)
+{
+    can_t msg;
+	uint8_t i;
+
+	msg.flags.extended = 0;
+	msg.flags.rtr = 0;
+	msg.id  = address; // slave to master
+	msg.length = 5;
+
+	i = 0;
+	while(i<6)
+	{
+		msg.data[0] = MSG_COMMAND_STATUS;
+		msg.data[1] = address;
+		msg.data[2] = MSG_STATUS_EEPROM_RELAIS1 + i;
+		msg.data[3] = relais_addresses[i];
+		msg.data[4] = relais_relais[i];
+
+		uart_put_can_msg(&msg);
+		if(can_send_message(&msg)) // successfull
+			i++;
+	}
+}
+
 void can_status_uptime(void)
 {
     can_t msg;
@@ -111,9 +137,10 @@ void can_parse_msg(can_t *msg)
 
 			case MSG_COMMAND_STATUS:
 				can_status_relais();
+				hr20_request_status();
 				break;
 
-			case MSG_COMMAND_EEPROM:
+			case MSG_COMMAND_EEPROM_SET:
 				switch(msg->data[2])
 				{
 					case MSG_EEPROM_ID:	
@@ -139,6 +166,9 @@ void can_parse_msg(can_t *msg)
 						eeprom_set_relais(5, msg->data[3], msg->data[4]);
 						break;
 				}
+				break;
+			case MSG_COMMAND_EEPROM_GET:
+				can_status_relais_eeprom();
 				break;
 		}
 	}

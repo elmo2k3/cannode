@@ -6,7 +6,6 @@
 #include <avr/wdt.h>
 #include <string.h>
 #include <stdio.h>
-#include "uart.h"
 #include "../canlib/can.h"
 #include "protocol.h"
 #include "buttons.h"
@@ -15,8 +14,6 @@
 #include "uart_master.h"
 #include "eeprom.h"
 #include "can_routines.h"
-
-#define UART_BAUDRATE 38400
 
 #define FLAG_125MS 1
 #define FLAG_1S 2
@@ -51,8 +48,6 @@ void main()
 	can_t msg_rx;
 	uint8_t i;
 
-	uint8_t key_state = 0;
-
 	LED0_OFF();
 	LED1_OFF();
 	LED2_OFF();
@@ -63,10 +58,12 @@ void main()
 	address = eeprom_get_address();
 	eeprom_get_relais(relais_addresses, relais_relais);
 
+	uart_master_init(0);
+	hr20_init(1);
+
     can_init(BITRATE_125_KBPS);
 	can_static_filter(can_filter);
 
-	uart_init(UART_BAUD_SELECT(UART_BAUDRATE, F_CPU));
 	timer_init();
 	relais_init();
 	
@@ -77,6 +74,7 @@ void main()
     while(1)
     {
 		uart_master_work();
+		hr20_work();
 		for(i=0;i<6;i++)
 		{
 			if(get_key_press(1<<KEYS[i]))

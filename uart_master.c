@@ -4,11 +4,28 @@
 #include "uart.h"
 #include "uart_master.h"
 
+#define UART_BAUDRATE 38400
+
 static void uart_putc_hex(char c);
+static uint8_t uart_master_active;
+
+void uart_master_init(uint8_t activated)
+{
+	uart_master_active = activated;
+
+	if(uart_master_active)
+	{
+		uart_init(UART_BAUD_SELECT(UART_BAUDRATE, F_CPU));
+	}
+}
 
 void uart_put_can_msg(can_t *msg)
 {
 	uint8_t i;
+
+	if(!uart_master_active)
+		return;
+
 	for(i=0;i<msg->length;i++)
 	{
 		uart_putc_hex(msg->data[i]);
@@ -35,14 +52,16 @@ void uart_master_work()
 {
 	static can_t msg;
 	static uint8_t recv_counter = 0;
-    
 	char rxbyte;
-
-	msg.flags.rtr = 0;
-	msg.flags.extended = 0;
+	
+	if(!uart_master_active)
+		return;
 
 	if(!uart_data())
 		return;
+
+	msg.flags.rtr = 0;
+	msg.flags.extended = 0;
 
 	rxbyte=uart_getchar();
 	if(rxbyte == 0x1B) // ESC
