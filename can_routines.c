@@ -27,6 +27,7 @@ void can_set_relais(uint8_t to_address, uint8_t relais, uint8_t state)
 	msg.data[1] = to_address;
 	msg.data[2] = relais;
 	msg.data[3] = state;
+	can_parse_msg(&msg); // parse message as it might be directly for us
 	can_send_message(&msg);
 	uart_put_can_msg(&msg);
 }
@@ -59,6 +60,7 @@ void can_status_relais(void)
 	msg.data[2] = MSG_STATUS_RELAIS;
 	msg.data[3] = relais_get();
 
+	can_parse_msg(&msg); // parse message as it might be directly for us
 	can_send_message(&msg);
 	uart_put_can_msg(&msg);
 }
@@ -109,7 +111,47 @@ void can_status_uptime(void)
 
 void can_parse_msg(can_t *msg)
 {
-	if(msg->data[1] == address || msg->data[1] == 0x00)
+	// parse relais status from other nodes
+	if(msg->data[0] == MSG_COMMAND_STATUS &&
+			msg->data[2] == MSG_STATUS_RELAIS)
+	{
+		uint8_t i,p;
+		for(i=0;i<6;i++) // go through all possible relais addresses
+		{
+			if(msg->data[1] == relais_addresses[i])
+			{
+				for(p=0;p<4;p++)
+				{
+					if(msg->data[3] & relais_relais[i])
+					{
+						switch(i)
+						{
+							case 0:	LED0_ON(); break;
+							case 1:	LED1_ON(); break;
+							case 2:	LED2_ON(); break;
+							case 3:	LED3_ON(); break;
+							case 4:	LED4_ON(); break;
+							case 5:	LED5_ON(); break;
+						}
+					}
+					else
+					{
+						switch(i)
+						{
+							case 0:	LED0_OFF(); break;
+							case 1:	LED1_OFF(); break;
+							case 2:	LED2_OFF(); break;
+							case 3:	LED3_OFF(); break;
+							case 4:	LED4_OFF(); break;
+							case 5:	LED5_OFF(); break;
+						}
+					}
+				}
+			}
+		}
+	}
+	// parse data for own address or multicast address (0x00)
+	else if(msg->data[1] == address || msg->data[1] == 0x00)
 	{
 		msg->data[1] = address;
 		switch(msg->data[0])
@@ -170,45 +212,15 @@ void can_parse_msg(can_t *msg)
 			case MSG_COMMAND_EEPROM_GET:
 				can_status_relais_eeprom();
 				break;
-		}
-	}
-	// parse relais status from other nodes
-	else if(msg->data[0] == MSG_COMMAND_STATUS &&
-			msg->data[2] == MSG_STATUS_RELAIS)
-	{
-		uint8_t i,p;
-		for(i=0;i<6;i++) // go through all possible relais addresses
-		{
-			if(msg->data[1] == relais_addresses[i])
-			{
-				for(p=0;p<4;p++)
-				{
-					if(msg->data[3] & relais_relais[i])
-					{
-						switch(i)
-						{
-							case 0:	LED0_ON(); break;
-							case 1:	LED1_ON(); break;
-							case 2:	LED2_ON(); break;
-							case 3:	LED3_ON(); break;
-							case 4:	LED4_ON(); break;
-							case 5:	LED5_ON(); break;
-						}
-					}
-					else
-					{
-						switch(i)
-						{
-							case 0:	LED0_OFF(); break;
-							case 1:	LED1_OFF(); break;
-							case 2:	LED2_OFF(); break;
-							case 3:	LED3_OFF(); break;
-							case 4:	LED4_OFF(); break;
-							case 5:	LED5_OFF(); break;
-						}
-					}
-				}
-			}
+			case MSG_COMMAND_HR20_SET_T:
+				hr20SetTemperature(msg->data[2]);
+				break;
+			case MSG_COMMAND_HR20_SET_MODE_MANU:
+				hr20SetModeManu();
+				break;
+			case MSG_COMMAND_HR20_SET_MODE_AUTO:
+				hr20SetModeAuto();
+				break;
 		}
 	}
 }

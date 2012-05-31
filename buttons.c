@@ -23,6 +23,7 @@ void buttons_every_10_ms(){
 
     DDRC = 0x00; //all input
     PORTC = 0x3F; // pullups on
+    _delay_us(20);
 
     i = key_state ^ ~(PINC & ((1<<KEY0) | (1<<KEY1) | (1<<KEY2) |
                       (1<<KEY3) | (1<<KEY4) | (1<<KEY5)));

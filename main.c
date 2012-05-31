@@ -58,8 +58,8 @@ void main()
 	address = eeprom_get_address();
 	eeprom_get_relais(relais_addresses, relais_relais);
 
-	uart_master_init(0);
-	hr20_init(1);
+	uart_master_init(1);
+	hr20_init(0);
 
     can_init(BITRATE_125_KBPS);
 	can_static_filter(can_filter);

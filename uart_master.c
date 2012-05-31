@@ -6,7 +6,6 @@
 
 #define UART_BAUDRATE 38400
 
-static void uart_putc_hex(char c);
 static uint8_t uart_master_active;
 
 void uart_master_init(uint8_t activated)
@@ -33,7 +32,7 @@ void uart_put_can_msg(can_t *msg)
 	uart_puts("\r\n");
 }
 
-static void uart_putc_hex(char c)
+void uart_putc_hex(uint8_t c)
 {
 	char c1;
 

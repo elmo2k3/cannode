@@ -28,6 +28,7 @@
 #include "protocol.h"
 #include "main.h"
 #include "uart.h"
+#include "uart_master.h"
 #include "can_routines.h"
 
 #define UART_BAUDRATE 9600
@@ -80,7 +81,7 @@ void hr20_init(uint8_t set_active)
         uart_init(UART_BAUD_SELECT(UART_BAUDRATE, F_CPU));
     }
 }
-// 0        1         2         3         4         5         6         7         8        9
+// 0         1         2         3         4         5         6         7         8        9
 // 01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 // D: d5 01.01.10 12:07:33 - V: 30 I: 1964 S: 0500 B: 2858 Is: 00000000 Ib: 05 Ic: 28 Ie: 1e X W
 void hr20_work()
@@ -116,15 +117,19 @@ void hr20_work()
     }
     else
     {
-        if(recv_counter < 150)
+        if(recv_counter < 140)
+		{
             buffer[recv_counter] = rxbyte;
+		}
 		recv_counter++;
     }
 }
 
 void hr20_request_status(void)
 {
-    uart_puts("D\r");
+    if(!hr20_active)
+        return;
+    uart_puts("D\n");
 }
 
 void parse_hr20_status(char *line, struct _hr20status *hr20status_temp)
@@ -190,28 +195,26 @@ void parse_hr20(char *line)
  *      of 5 are allowed
  * \returns returns 1 on success, 0 on failure
  *******************************************************************************/
-int hr20SetTemperature(int temperature)
+void hr20SetTemperature(uint8_t temperature)
 {
-    char buffer[16];
-
-    if(temperature % 5) // temperature may only be XX.5°C
-        return 1;
-    sprintf(buffer,"A%02x\r", temperature/5);
-    hr20SerialCommand(buffer);
-    return 0;
+    if(!hr20_active)
+        return;
+	uart_putc('A');
+	uart_putc_hex(temperature);
+	uart_putc('\n');
 }
 
-int hr20SetAutoTemperature(int slot, int temperature)
-{
-    char buffer[16];
-
-    if(temperature % 5) // temperature may only be XX.5°C
-        return 0;
-
-    sprintf(buffer,"S%02x%02x\r",slot+1, temperature/5);
-    hr20SerialCommand(buffer);
-    return 1;
-}
+//int hr20SetAutoTemperature(int slot, int temperature)
+//{
+//    char buffer[16];
+//
+//    if(temperature % 5) // temperature may only be XX.5°C
+//        return 0;
+//
+//    sprintf(buffer,"S%02x%02x\r",slot+1, temperature/5);
+//    hr20SerialCommand(buffer);
+//    return 1;
+//}
 
 /*!
  ********************************************************************************
@@ -221,7 +224,9 @@ int hr20SetAutoTemperature(int slot, int temperature)
  *******************************************************************************/
 void hr20SetModeManu()
 {
-    hr20SerialCommand("M00\r");
+    if(!hr20_active)
+        return;
+	uart_puts("M00\r");
 }
 
 /*!
@@ -232,7 +237,9 @@ void hr20SetModeManu()
  *******************************************************************************/
 void hr20SetModeAuto()
 {
-    hr20SerialCommand("M01\r");
+    if(!hr20_active)
+        return;
+	uart_puts("M01\r");
 }
 
 //static int16_t hr20GetAutoTemperature(int slot)
