@@ -10,6 +10,7 @@
 #include "main.h"
 #include "uart_master.h"
 #include "eeprom.h"
+#include "hr20.h"
 
 void (*reset)( void ) = (void*)0x0000;
 
@@ -48,6 +49,39 @@ void can_status_powerup(void)
 	uart_put_can_msg(&msg);
 }
 
+void can_status_hr20(void)
+{
+	uint8_t time_no_data;
+
+    can_t msg;
+	msg.flags.extended = 0;
+	msg.flags.rtr = 0;
+	msg.id  = address; // slave to master
+	msg.length = 8;
+	msg.data[0] = MSG_COMMAND_STATUS;
+	msg.data[1] = address;
+	msg.data[2] = MSG_STATUS_HR20_TEMPS;
+	msg.data[3] = hr20status.data_valid | hr20status.mode << 1 | hr20status.window_open << 2;
+	msg.data[4] = hr20status.tempis >> 8;
+	msg.data[5] = hr20status.tempis & 0xFF;
+	msg.data[6] = hr20status.tempset >> 8;
+	msg.data[7] = hr20status.tempset & 0xFF;
+	while(!can_send_message(&msg));
+	
+	if((uptime - hr20status.data_timestamp) > 255)
+		time_no_data = 255;
+	else
+		time_no_data = uptime - hr20status.data_timestamp;
+
+	msg.data[2] = MSG_STATUS_HR20_VALVE_VOLT;
+	msg.data[3] = time_no_data;
+	msg.data[4] = hr20status.valve;
+	msg.data[5] = hr20status.voltage >> 8;
+	msg.data[6] = hr20status.voltage & 0xFF;
+	msg.data[7] = hr20status.error_code;
+	while(!can_send_message(&msg));
+}
+
 void can_status_relais(void)
 {
     can_t msg;
@@ -61,7 +95,7 @@ void can_status_relais(void)
 	msg.data[3] = relais_get();
 
 	can_parse_msg(&msg); // parse message as it might be directly for us
-	can_send_message(&msg);
+	while(!can_send_message(&msg));
 	uart_put_can_msg(&msg);
 }
 
@@ -177,7 +211,7 @@ void can_parse_msg(can_t *msg)
 					relais_set(RELAIS_4, msg->data[3]);
 				break;
 
-			case MSG_COMMAND_STATUS:
+			case MSG_COMMAND_GET_STATUS:
 				can_status_relais();
 				hr20_request_status();
 				break;
@@ -220,6 +254,12 @@ void can_parse_msg(can_t *msg)
 				break;
 			case MSG_COMMAND_HR20_SET_MODE_AUTO:
 				hr20SetModeAuto();
+				break;
+			case MSG_COMMAND_HR20_SET_TIME:
+				hr20SetTime(msg->data[2], msg->data[3], msg->data[4]);
+				break;
+			case MSG_COMMAND_HR20_SET_DATE:
+				hr20SetDate(msg->data[2], msg->data[3], msg->data[4]);
 				break;
 		}
 	}

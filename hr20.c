@@ -24,46 +24,56 @@
 */
 
 #include <inttypes.h>
+#include <util/delay.h>
 #include <string.h>
 #include "protocol.h"
 #include "main.h"
 #include "uart.h"
 #include "uart_master.h"
 #include "can_routines.h"
+#include "hr20.h"
 
 #define UART_BAUDRATE 9600
 
 //#include "hr20.h"
 
-static int16_t hexCharToInt(char c);
-static int hr20SerialCommand(char *buffer)
-{
-}
+struct _hr20status hr20status, hr20statusTemp;
 static uint8_t hr20_active;
 
-/** struct holding complete status information from the hr20 device */
-struct _hr20status
-{
-    int16_t tempis; /**< current temperature */
-    int16_t tempset; /**< user set temperature */
-    int8_t valve; /**< how open is the valve? in percent */
-    int16_t voltage; /**< voltage of the batteries */
-    int8_t mode; /**< mode, 1 for manual, 2 for automatic control */
-    int16_t auto_temperature[4];
-}hr20status;
+static uint8_t hexCharToInt(char c);
 
-static int hr20checkPlausibility(struct _hr20status *hr20status)
+static void hr20SerialCommand(char *buffer)
 {
-    if(hr20status->mode < 1 || hr20status->mode > 2)
+	char c;
+
+	while(c = *buffer++)
+	{
+		uart_putc(c);
+		_delay_ms(10);
+	}
+}
+
+static int hr20checkPlausibility()
+{
+    if(hr20statusTemp.tempis < 500 || hr20statusTemp.tempis > 4000)
         return 0;
-    if(hr20status->tempis < 500 || hr20status->tempis > 4000)
+    if(hr20statusTemp.tempset < 500 || hr20statusTemp.tempset > 3000)
         return 0;
-    if(hr20status->tempset < 500 || hr20status->tempset > 3000)
+    if(hr20statusTemp.valve < 0 || hr20statusTemp.valve > 100)
         return 0;
-    if(hr20status->valve < 0 || hr20status->valve > 100)
+    if(hr20statusTemp.voltage < 2000 || hr20statusTemp.voltage > 4000)
         return 0;
-    if(hr20status->voltage < 2000 || hr20status->voltage > 4000)
-        return 0;
+
+	hr20status.tempis = hr20statusTemp.tempis;
+	hr20status.tempset = hr20statusTemp.tempset;
+	hr20status.valve = hr20statusTemp.valve;
+	hr20status.voltage = hr20statusTemp.voltage;
+	hr20status.mode = hr20statusTemp.mode;
+	hr20status.error_code = hr20statusTemp.error_code;
+	hr20status.window_open = hr20statusTemp.window_open;
+
+	hr20status.data_timestamp = uptime;
+	hr20status.data_valid = 1;
 //    for(i=0;i<4;i++)
 //    {
 //        if(hr20status->auto_temperature[i] < 500 || hr20status->auto_temperature[i] > 3000)
@@ -79,57 +89,89 @@ void hr20_init(uint8_t set_active)
     if(hr20_active)
     {
         uart_init(UART_BAUD_SELECT(UART_BAUDRATE, F_CPU));
+		hr20status.data_valid = 0;
     }
 }
-// 0         1         2         3         4         5         6         7         8        9
+// 0         1         2         3         4         5         6         7         8         9
 // 01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 // D: d5 01.01.10 12:07:33 - V: 30 I: 1964 S: 0500 B: 2858 Is: 00000000 Ib: 05 Ic: 28 Ie: 1e X W
+// D: d5 01.01.10 15:49:36 - V: 43 I: 1812 S: 1750 B: 2910 Is: 00000000 Ib: 06 Ic: 28 Ie: 1e E:04 X
 void hr20_work()
 {
-	static can_t msg;
 	static uint8_t recv_counter = 0;
 	char rxbyte;
     static char buffer[150];
+	uint8_t win_flag_pos;
 
     if(!hr20_active)
         return;
 	if(!uart_data())
 		return;
 	
-    msg.flags.rtr = 0;
-	msg.flags.extended = 0;
-    msg.id = 0x0F0;
-	
-    rxbyte=uart_getchar();
-	if(rxbyte == '\n')
+	while(uart_data())
 	{
-        msg.length = 8;
-        msg.data[0] = MSG_COMMAND_STATUS;
-        msg.data[1] = address;
-        msg.data[2] = MSG_STATUS_HR20_TEMPIS;
-        msg.data[3] = buffer[35];
-        msg.data[4] = buffer[36];
-        msg.data[5] = buffer[37];
-        msg.data[6] = buffer[38];
-        msg.data[7] = buffer[92];
-        can_send_message(&msg);
-		recv_counter = 0;
-    }
-    else
-    {
-        if(recv_counter < 140)
+		rxbyte=uart_getchar();
+		if(rxbyte == '\n' && recv_counter > 89)
 		{
-            buffer[recv_counter] = rxbyte;
+			if(buffer[0] == 'D')
+			{
+				if(buffer[24] == '-') // mode is auto
+					hr20statusTemp.mode = 0;
+				if(buffer[24] == 'M') // mode is manu
+					hr20statusTemp.mode = 1;
+				hr20statusTemp.valve = 10*(buffer[29]-48)+(buffer[30]-48);
+				hr20statusTemp.tempis = (buffer[38]-48)+
+										(buffer[37]-48)*10 +
+										(buffer[36]-48)*100 +
+										(buffer[35]-48)*1000;
+				hr20statusTemp.tempset = (buffer[46]-48)+
+										(buffer[45]-48)*10 +
+										(buffer[44]-48)*100 +
+										(buffer[43]-48)*1000;
+				hr20statusTemp.voltage = (buffer[54]-48)+
+										(buffer[53]-48)*10 +
+										(buffer[52]-48)*100 +
+										(buffer[51]-48)*1000;
+				if(recv_counter > 90 && buffer[90] == 'E')
+				{
+					hr20statusTemp.error_code = hexCharToInt(buffer[92])*16 + hexCharToInt(buffer[93]);
+					win_flag_pos = 95;
+				}
+				else
+				{
+					hr20statusTemp.error_code = 0;
+					win_flag_pos = 90;
+				}
+				if((recv_counter > (win_flag_pos+2) && buffer[win_flag_pos+2] == 'W') 
+					|| (recv_counter > win_flag_pos && buffer[win_flag_pos] == 'W'))
+				{
+					hr20statusTemp.window_open = 1;
+				}
+				else
+				{
+					hr20statusTemp.window_open = 0;
+				}
+
+				hr20checkPlausibility();
+			}
+			recv_counter = 0;
 		}
-		recv_counter++;
-    }
+		else
+		{
+			if(recv_counter < 140)
+			{
+				buffer[recv_counter] = rxbyte;
+			}
+			recv_counter++;
+		}
+	}
 }
 
 void hr20_request_status(void)
 {
     if(!hr20_active)
         return;
-    uart_puts("D\n");
+	hr20SerialCommand("D\n");
 }
 
 void parse_hr20_status(char *line, struct _hr20status *hr20status_temp)
@@ -150,41 +192,6 @@ void parse_hr20_auto_temperature(char *line)
                                               hexCharToInt(line[7]))*50;
 }
 
-void parse_hr20(char *line)
-{
-    struct _hr20status hr20status_temp;
-
-    if(strlen(line) < 4)
-    {
-        return;
-    }
-    
-    if(line[0] == 'D')
-    {
-        parse_hr20_status(line, &hr20status_temp);
-        if(hr20checkPlausibility(&hr20status_temp))
-        {
-            hr20status.mode = hr20status_temp.mode;
-            hr20status.valve = hr20status_temp.valve;
-            hr20status.tempis = hr20status_temp.tempis;
-            hr20status.tempset = hr20status_temp.tempset;
-            hr20status.voltage = hr20status_temp.voltage;
-        }
-
-        hr20SerialCommand("G01\r");
-        hr20SerialCommand("G02\r");
-        hr20SerialCommand("G03\r");
-        hr20SerialCommand("G04\r");
-    }
-    else if(line[0] == 'G')
-    {
-        parse_hr20_auto_temperature(line);
-    }
-    else
-        return;
-    
-}
-
 /*!
  ********************************************************************************
  * hr20SetTemperature
@@ -200,9 +207,50 @@ void hr20SetTemperature(uint8_t temperature)
     if(!hr20_active)
         return;
 	uart_putc('A');
+	_delay_ms(10);
 	uart_putc_hex(temperature);
+	_delay_ms(10);
 	uart_putc('\n');
 }
+
+void hr20SetTime(uint8_t hours, uint8_t mins, uint8_t secs)
+{
+	char time[8];
+
+	time[0] = 'H';
+	if(hours<10) time[1] = '0';
+	else time[1] = (hours / 10) + 48;
+	time[2] = hours % 10 + 48;
+	if(mins<10) time[3] = '0';
+	else time[3] = (mins / 10) + 48;
+	time[4] = mins % 10 + 48;
+	if(secs<10) time[5] = '0';
+	else time[5] = (secs / 10) + 48;
+	time[6] = secs % 10 + 48;
+	time[7] = '\n';
+
+	hr20SerialCommand(time);
+}
+
+void hr20SetDate(uint8_t year, uint8_t month, uint8_t day)
+{
+	char time[8];
+
+	time[0] = 'Y';
+	if(year<10) time[1] = '0';
+	else time[1] = (year / 10) + 48;
+	time[2] = year % 10 + 48;
+	if(month<10) time[3] = '0';
+	else time[3] = (month / 10) + 48;
+	time[4] = month % 10 + 48;
+	if(day<10) time[5] = '0';
+	else time[5] = (day / 10) + 48;
+	time[6] = day % 10 + 48;
+	time[7] = '\n';
+
+	hr20SerialCommand(time);
+}
+
 
 //int hr20SetAutoTemperature(int slot, int temperature)
 //{
@@ -226,7 +274,7 @@ void hr20SetModeManu()
 {
     if(!hr20_active)
         return;
-	uart_puts("M00\r");
+	hr20SerialCommand("M00\n");
 }
 
 /*!
@@ -239,7 +287,7 @@ void hr20SetModeAuto()
 {
     if(!hr20_active)
         return;
-	uart_puts("M01\r");
+	hr20SerialCommand("M01\n");
 }
 
 //static int16_t hr20GetAutoTemperature(int slot)
@@ -269,7 +317,7 @@ void hr20SetModeAuto()
 //        return 0;
 //}
 
-static int16_t hexCharToInt(char c)
+static uint8_t hexCharToInt(char c)
 {
     if(c <= 57)
         return c - 48;

@@ -14,6 +14,7 @@
 #include "uart_master.h"
 #include "eeprom.h"
 #include "can_routines.h"
+#include "hr20.h"
 
 #define FLAG_125MS 1
 #define FLAG_1S 2
@@ -43,10 +44,12 @@ const prog_uint8_t can_filter[] = {
 	MCP2515_FILTER(0x0),				// Mask 0 (for group 0)
 	MCP2515_FILTER(0x0),				// Mask 1 (for group 1)
 };
-void main()
+
+int main()
 {
 	can_t msg_rx;
 	uint8_t i;
+	uint8_t minute_counter;
 
 	LED0_OFF();
 	LED1_OFF();
@@ -58,8 +61,10 @@ void main()
 	address = eeprom_get_address();
 	eeprom_get_relais(relais_addresses, relais_relais);
 
-	uart_master_init(1);
-	hr20_init(0);
+	PORTD = (1<<PD0); // pullup for rxd pin
+	DDRD = (1<<PD1); // output for tx pin
+	uart_master_init(0);
+	hr20_init(1);
 
     can_init(BITRATE_125_KBPS);
 	can_static_filter(can_filter);
@@ -71,6 +76,7 @@ void main()
 	
 	sei();
 	
+	minute_counter = 0;
     while(1)
     {
 		uart_master_work();
@@ -99,9 +105,16 @@ void main()
 		if(refreshFlags & (1<<FLAG_1S))
 		{
 			can_status_uptime();
+			can_status_hr20();
+			if(++minute_counter == 60)
+			{
+				hr20_request_status();
+				minute_counter = 0;
+			}
 			refreshFlags &= ~(1<<FLAG_1S);
 		}
     }
+	return 0;
 }
 
 void timer_init()
