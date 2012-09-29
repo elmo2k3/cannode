@@ -11,8 +11,10 @@
 #include "uart_master.h"
 #include "eeprom.h"
 #include "hr20.h"
+#include "adc.h"
 
 void (*reset)( void ) = (void*)0x0000;
+void (*bootloader)( void ) = (void*)0x1C00;
 
 void can_set_relais(uint8_t to_address, uint8_t relais, uint8_t state)
 {
@@ -126,18 +128,22 @@ void can_status_relais_eeprom(void)
 
 void can_status_uptime(void)
 {
+	uint16_t voltage;
+	voltage = getBatteryVoltage();
+
     can_t msg;
 	msg.flags.extended = 0;
 	msg.flags.rtr = 0;
 	msg.id  = address; // slave to master
-	msg.length = 7;
+	msg.length = 8;
 	msg.data[0] = MSG_COMMAND_STATUS;
 	msg.data[1] = address;
 	msg.data[2] = MSG_STATUS_UPTIME;
-	msg.data[3] = (uptime >>24) & 0xFF;
+	msg.data[3] = ((uptime >>24) & 0x0F) | (VERSION<<4); // put version number in highest nibble
 	msg.data[4] = (uptime >>16) & 0xFF;
 	msg.data[5] = (uptime >>8) & 0xFF;
 	msg.data[6] = uptime & 0xFF;
+	msg.data[7] = voltage & 0xFF;
 
 	can_send_message(&msg);
 	uart_put_can_msg(&msg);
@@ -194,6 +200,11 @@ void can_parse_msg(can_t *msg)
 				msg->id  = address; // slave to master
 				can_send_message(msg);
 				break;
+			
+			case MSG_COMMAND_BOOTLOADER:
+				cli();
+				bootloader();
+				break;
 
 			case MSG_COMMAND_RESET:
 				cli();
@@ -240,6 +251,14 @@ void can_parse_msg(can_t *msg)
 						break;
 					case MSG_EEPROM_RELAIS6:
 						eeprom_set_relais(5, msg->data[3], msg->data[4]);
+						break;
+					case MSG_EEPROM_BANDGAP:
+						eeprom_set_bandgap(msg->data[3]);
+						break;
+					case MSG_EEPROM_UART_MASTER:
+						eeprom_set_uart_master(msg->data[3]);
+						cli();
+						reset();
 						break;
 				}
 				break;

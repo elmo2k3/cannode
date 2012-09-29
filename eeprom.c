@@ -5,7 +5,11 @@
 #define ADDRESS_NULL 0xB0
 #define RELAIS_ADDRESS_NULL 0xFF
 #define RELAIS_RELAIS_NULL 0x00
+#define BANDGAP_NULL 123
+#define UART_MASTER_NULL 0
 
+uint8_t uart_master_eeprom EEMEM;
+uint8_t bandgap_eeprom EEMEM;
 uint8_t address_eeprom EEMEM;
 uint8_t relais_addresses_eeprom[6] EEMEM;
 uint8_t relais_relais_eeprom[6] EEMEM;
@@ -20,6 +24,41 @@ uint8_t eeprom_get_address(void)
 		address = ADDRESS_NULL;
 
 	return address;
+}
+
+uint8_t eeprom_get_bandgap(void)
+{
+	uint8_t bandgap;
+	
+	bandgap = eeprom_read_byte(&bandgap_eeprom);
+
+	if(bandgap == 0xFF) // fresh eeprom
+		bandgap = BANDGAP_NULL;
+
+	return bandgap;
+}
+
+void eeprom_set_bandgap(uint8_t set_bandgap)
+{
+	bandgap = set_bandgap;
+	eeprom_write_byte(&bandgap_eeprom, set_bandgap);
+}
+
+uint8_t eeprom_get_uart_master(void)
+{
+	uint8_t uart_master;
+	
+	uart_master = eeprom_read_byte(&uart_master_eeprom);
+
+	if(uart_master == 0xFF) // fresh eeprom
+		uart_master = UART_MASTER_NULL;
+
+	return uart_master;
+}
+
+void eeprom_set_uart_master(uint8_t set_uart_master)
+{
+	eeprom_write_byte(&uart_master_eeprom, set_uart_master);
 }
 
 void eeprom_get_relais(uint8_t *addresses, uint8_t *relais)

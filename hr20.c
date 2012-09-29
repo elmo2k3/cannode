@@ -34,6 +34,7 @@
 #include "hr20.h"
 
 #define UART_BAUDRATE 9600
+#define HR20_DELAY_TIME 20
 
 //#include "hr20.h"
 
@@ -49,7 +50,7 @@ static void hr20SerialCommand(char *buffer)
 	while(c = *buffer++)
 	{
 		uart_putc(c);
-		_delay_ms(10);
+		_delay_ms(HR20_DELAY_TIME);
 	}
 }
 
@@ -115,7 +116,7 @@ void hr20_work()
 		{
 			if(buffer[0] == 'D')
 			{
-				if(buffer[24] == '-') // mode is auto
+				if((buffer[24] == '-') || (buffer[24] == 'A')) // mode is auto
 					hr20statusTemp.mode = 0;
 				if(buffer[24] == 'M') // mode is manu
 					hr20statusTemp.mode = 1;
@@ -207,48 +208,43 @@ void hr20SetTemperature(uint8_t temperature)
     if(!hr20_active)
         return;
 	uart_putc('A');
-	_delay_ms(10);
+	_delay_ms(HR20_DELAY_TIME);
 	uart_putc_hex(temperature);
-	_delay_ms(10);
+	_delay_ms(HR20_DELAY_TIME);
+	uart_putc('\r');
 	uart_putc('\n');
 }
 
 void hr20SetTime(uint8_t hours, uint8_t mins, uint8_t secs)
 {
-	char time[8];
-
-	time[0] = 'H';
-	if(hours<10) time[1] = '0';
-	else time[1] = (hours / 10) + 48;
-	time[2] = hours % 10 + 48;
-	if(mins<10) time[3] = '0';
-	else time[3] = (mins / 10) + 48;
-	time[4] = mins % 10 + 48;
-	if(secs<10) time[5] = '0';
-	else time[5] = (secs / 10) + 48;
-	time[6] = secs % 10 + 48;
-	time[7] = '\n';
-
-	hr20SerialCommand(time);
+	if(!hr20_active)
+        return;
+	uart_putc('H');
+	_delay_ms(HR20_DELAY_TIME);
+	uart_putc_hex(hours);
+	_delay_ms(HR20_DELAY_TIME);
+	uart_putc_hex(mins);
+	_delay_ms(HR20_DELAY_TIME);
+	uart_putc_hex(secs);
+	_delay_ms(HR20_DELAY_TIME);
+	uart_putc('\r');
+	uart_putc('\n');
 }
 
 void hr20SetDate(uint8_t year, uint8_t month, uint8_t day)
 {
-	char time[8];
-
-	time[0] = 'Y';
-	if(year<10) time[1] = '0';
-	else time[1] = (year / 10) + 48;
-	time[2] = year % 10 + 48;
-	if(month<10) time[3] = '0';
-	else time[3] = (month / 10) + 48;
-	time[4] = month % 10 + 48;
-	if(day<10) time[5] = '0';
-	else time[5] = (day / 10) + 48;
-	time[6] = day % 10 + 48;
-	time[7] = '\n';
-
-	hr20SerialCommand(time);
+	if(!hr20_active)
+        return;
+	uart_putc('Y');
+	_delay_ms(HR20_DELAY_TIME);
+	uart_putc_hex(year);
+	_delay_ms(HR20_DELAY_TIME);
+	uart_putc_hex(month);
+	_delay_ms(HR20_DELAY_TIME);
+	uart_putc_hex(day);
+	_delay_ms(HR20_DELAY_TIME);
+	uart_putc('\r');
+	uart_putc('\n');
 }
 
 

@@ -1,2 +1,4 @@
-# Brown out 2.7V external clock
-avrdude -c dragon_isp -P usb -p m8 -U lfuse:w:0xA0:m -U hfuse:w:0xd1:m
+# Brown out 2.7V external clock 512 words bootloader no bl reset vector
+#avrdude -c dragon_isp -P usb -p m8 -U lfuse:w:0xA0:m -U hfuse:w:0xd3:m -B20
+# Bootloader 512 words
+avrdude -c dragon_isp -P usb -p m8 -U lfuse:w:0xA0:m -U hfuse:w:0xd2:m -B20

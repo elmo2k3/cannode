@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include <util/delay.h>
 
 #include "can_routines.h"
 #include "uart.h"
@@ -25,6 +26,9 @@ void uart_put_can_msg(can_t *msg)
 	if(!uart_master_active)
 		return;
 
+	uart_putc_hex(msg->id >> 8);
+	uart_putc_hex(msg->id >> 0);
+	uart_putc_hex(msg->length);
 	for(i=0;i<msg->length;i++)
 	{
 		uart_putc_hex(msg->data[i]);
@@ -38,12 +42,12 @@ void uart_putc_hex(uint8_t c)
 
 	c1 = (c >> 4 & 0x0F) + 48;
 	if(c1 > 0x39)
-		c1 += 7;
+		c1 += 39;
 	uart_putc(c1);
 	
 	c1 = (c & 0x0F) + 48;
 	if(c1 > 0x39)
-		c1 += 7;
+		c1 += 39;
 	uart_putc(c1);
 }
 
@@ -65,7 +69,6 @@ void uart_master_work()
 	rxbyte=uart_getchar();
 	if(rxbyte == 0x1B) // ESC
 	{
-		uart_puts("reset\r\n");
 		recv_counter = 0;
 	}
 	else
@@ -73,20 +76,23 @@ void uart_master_work()
 		//uart_putc(rxbyte); // echo
 		if(rxbyte > 0x39)
 			rxbyte -= 7;
+		if(rxbyte > 0x46)
+			rxbyte -= 32;
 		switch(recv_counter++)
 		{
 			case 0:		msg.id = (rxbyte-48) << 8; break;
 			case 1:		msg.id |= (rxbyte-48) << 4; break;
 			case 2:		msg.id |= (rxbyte-48) << 0; break;
 			
-			case 3:		msg.data[0] = (rxbyte-48) << 4; break; //command
-			case 4:		msg.data[0] |= (rxbyte-48) << 0; break; // command
 			
-			case 5:		msg.data[1] = (rxbyte-48) << 4; break; //address
-			case 6:		msg.data[1] |= (rxbyte-48) << 0; break; //address
+			case 3:		msg.length = (rxbyte-48) << 4; break; //length
+			case 4:		msg.length |= (rxbyte-48) << 0; break; //length
+
+			case 5:		msg.data[0] = (rxbyte-48) << 4; break; //command
+			case 6:		msg.data[0] |= (rxbyte-48) << 0; break; // command
 			
-			case 7:		msg.length = (rxbyte-48) << 4; break; //length
-			case 8:		msg.length |= (rxbyte-48) << 0; break; //length
+			case 7:		msg.data[1] = (rxbyte-48) << 4; break; //address
+			case 8:		msg.data[1] |= (rxbyte-48) << 0; break; //address
 			
 			case 9:		msg.data[2] = (rxbyte-48) << 4; break;
 			case 10:	msg.data[2] |= (rxbyte-48) << 0; break;
@@ -104,7 +110,6 @@ void uart_master_work()
 
 		if(recv_counter > 8 && recv_counter > (msg.length*2 + 4))
 		{
-			uart_puts("sending\r\n");
 			recv_counter = 0;
 
 			can_parse_msg(&msg); // parse message as it might be directly for us
