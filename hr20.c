@@ -24,7 +24,6 @@
 */
 
 #include <inttypes.h>
-#include <util/delay.h>
 #include <string.h>
 #include "protocol.h"
 #include "main.h"
@@ -34,7 +33,6 @@
 #include "hr20.h"
 
 #define UART_BAUDRATE 9600
-#define HR20_DELAY_TIME 20
 
 //#include "hr20.h"
 
@@ -50,7 +48,6 @@ static void hr20SerialCommand(char *buffer)
 	while(c = *buffer++)
 	{
 		uart_putc(c);
-		_delay_ms(HR20_DELAY_TIME);
 	}
 }
 
@@ -91,6 +88,7 @@ void hr20_init(uint8_t set_active)
     {
         uart_init(UART_BAUD_SELECT(UART_BAUDRATE, F_CPU));
 		hr20status.data_valid = 0;
+		hr20_request_status();
     }
 }
 // 0         1         2         3         4         5         6         7         8         9
@@ -208,9 +206,7 @@ void hr20SetTemperature(uint8_t temperature)
     if(!hr20_active)
         return;
 	uart_putc('A');
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc_hex(temperature);
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc('\r');
 	uart_putc('\n');
 }
@@ -220,13 +216,9 @@ void hr20SetTime(uint8_t hours, uint8_t mins, uint8_t secs)
 	if(!hr20_active)
         return;
 	uart_putc('H');
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc_hex(hours);
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc_hex(mins);
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc_hex(secs);
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc('\r');
 	uart_putc('\n');
 }
@@ -236,13 +228,9 @@ void hr20SetDate(uint8_t year, uint8_t month, uint8_t day)
 	if(!hr20_active)
         return;
 	uart_putc('Y');
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc_hex(year);
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc_hex(month);
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc_hex(day);
-	_delay_ms(HR20_DELAY_TIME);
 	uart_putc('\r');
 	uart_putc('\n');
 }

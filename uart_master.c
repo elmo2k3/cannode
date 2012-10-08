@@ -65,55 +65,58 @@ void uart_master_work()
 
 	msg.flags.rtr = 0;
 	msg.flags.extended = 0;
-
-	rxbyte=uart_getchar();
-	if(rxbyte == 0x1B) // ESC
+	
+	while(uart_data())
 	{
-		recv_counter = 0;
-	}
-	else
-	{
-		//uart_putc(rxbyte); // echo
-		if(rxbyte > 0x39)
-			rxbyte -= 7;
-		if(rxbyte > 0x46)
-			rxbyte -= 32;
-		switch(recv_counter++)
-		{
-			case 0:		msg.id = (rxbyte-48) << 8; break;
-			case 1:		msg.id |= (rxbyte-48) << 4; break;
-			case 2:		msg.id |= (rxbyte-48) << 0; break;
-			
-			
-			case 3:		msg.length = (rxbyte-48) << 4; break; //length
-			case 4:		msg.length |= (rxbyte-48) << 0; break; //length
-
-			case 5:		msg.data[0] = (rxbyte-48) << 4; break; //command
-			case 6:		msg.data[0] |= (rxbyte-48) << 0; break; // command
-			
-			case 7:		msg.data[1] = (rxbyte-48) << 4; break; //address
-			case 8:		msg.data[1] |= (rxbyte-48) << 0; break; //address
-			
-			case 9:		msg.data[2] = (rxbyte-48) << 4; break;
-			case 10:	msg.data[2] |= (rxbyte-48) << 0; break;
-			case 11:	msg.data[3] = (rxbyte-48) << 4; break;
-			case 12:	msg.data[3] |= (rxbyte-48) << 0; break;
-			case 13:	msg.data[4] = (rxbyte-48) << 4; break;
-			case 14:	msg.data[4] |= (rxbyte-48) << 0; break;
-			case 15:	msg.data[5] = (rxbyte-48) << 4; break;
-			case 16:	msg.data[5] |= (rxbyte-48) << 0; break;
-			case 17:	msg.data[6] = (rxbyte-48) << 4; break;
-			case 18:	msg.data[6] |= (rxbyte-48) << 0; break;
-			case 19:	msg.data[7] = (rxbyte-48) << 4; break;
-			case 20:	msg.data[7] |= (rxbyte-48) << 0; break;
-		}
-
-		if(recv_counter > 8 && recv_counter > (msg.length*2 + 4))
+		rxbyte=uart_getchar();
+		if(rxbyte == 0x1B) // ESC
 		{
 			recv_counter = 0;
+		}
+		else
+		{
+			//uart_putc(rxbyte); // echo
+			if(rxbyte > 0x39)
+				rxbyte -= 7;
+			if(rxbyte > 0x46)
+				rxbyte -= 32;
+			switch(recv_counter++)
+			{
+				case 0:		msg.id = (rxbyte-48) << 8; break;
+				case 1:		msg.id |= (rxbyte-48) << 4; break;
+				case 2:		msg.id |= (rxbyte-48) << 0; break;
+				
+				
+				case 3:		msg.length = (rxbyte-48) << 4; break; //length
+				case 4:		msg.length |= (rxbyte-48) << 0; break; //length
 
-			can_parse_msg(&msg); // parse message as it might be directly for us
-			can_send_message(&msg);
+				case 5:		msg.data[0] = (rxbyte-48) << 4; break; //command
+				case 6:		msg.data[0] |= (rxbyte-48) << 0; break; // command
+				
+				case 7:		msg.data[1] = (rxbyte-48) << 4; break; //address
+				case 8:		msg.data[1] |= (rxbyte-48) << 0; break; //address
+				
+				case 9:		msg.data[2] = (rxbyte-48) << 4; break;
+				case 10:	msg.data[2] |= (rxbyte-48) << 0; break;
+				case 11:	msg.data[3] = (rxbyte-48) << 4; break;
+				case 12:	msg.data[3] |= (rxbyte-48) << 0; break;
+				case 13:	msg.data[4] = (rxbyte-48) << 4; break;
+				case 14:	msg.data[4] |= (rxbyte-48) << 0; break;
+				case 15:	msg.data[5] = (rxbyte-48) << 4; break;
+				case 16:	msg.data[5] |= (rxbyte-48) << 0; break;
+				case 17:	msg.data[6] = (rxbyte-48) << 4; break;
+				case 18:	msg.data[6] |= (rxbyte-48) << 0; break;
+				case 19:	msg.data[7] = (rxbyte-48) << 4; break;
+				case 20:	msg.data[7] |= (rxbyte-48) << 0; break;
+			}
+
+			if(recv_counter > 8 && recv_counter > (msg.length*2 + 4))
+			{
+				recv_counter = 0;
+
+				can_parse_msg(&msg); // parse message as it might be directly for us
+				while(!can_send_message(&msg));
+			}
 		}
 	}
 }
