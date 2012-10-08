@@ -84,6 +84,24 @@ void can_status_hr20(void)
 	while(!can_send_message(&msg));
 }
 
+void can_status_hr20_timer(void)
+{
+    can_t msg;
+	msg.flags.extended = 0;
+	msg.flags.rtr = 0;
+	msg.id  = address; // slave to master
+	msg.length = 8;
+	msg.data[0] = MSG_COMMAND_STATUS;
+	msg.data[1] = address;
+	msg.data[2] = MSG_STATUS_HR20_TIMER;
+	msg.data[3] = hr20status.last_timer.day;
+	msg.data[4] = hr20status.last_timer.slot;
+	msg.data[5] = hr20status.last_timer.mode;
+	msg.data[6] = hr20status.last_timer.time >> 8;
+	msg.data[7] = hr20status.last_timer.time &0xFF;
+	while(!can_send_message(&msg));
+}
+
 void can_status_relais(void)
 {
     can_t msg;
@@ -279,6 +297,13 @@ void can_parse_msg(can_t *msg)
 				break;
 			case MSG_COMMAND_HR20_SET_DATE:
 				hr20SetDate(msg->data[2], msg->data[3], msg->data[4]);
+				break;
+			case MSG_COMMAND_HR20_GET_TIMER:
+				hr20GetTimer(msg->data[2],msg->data[3]);
+				break;
+			case MSG_COMMAND_HR20_SET_TIMER:
+				hr20SetTimer(msg->data[2],msg->data[3],msg->data[4],
+					(msg->data[5] << 8) + msg->data[6]);
 				break;
 		}
 	}

@@ -51,6 +51,26 @@ void uart_putc_hex(uint8_t c)
 	uart_putc(c1);
 }
 
+void uart_putc_hex_XXX(uint16_t c)
+{
+	char c1;
+
+	c1 = (c >> 8 & 0x0F) + 48;
+	if(c1 > 0x39)
+		c1 += 39;
+	uart_putc(c1);
+	
+	c1 = (c >> 4 & 0x0F) + 48;
+	if(c1 > 0x39)
+		c1 += 39;
+	uart_putc(c1);
+	
+	c1 = (c & 0x0F) + 48;
+	if(c1 > 0x39)
+		c1 += 39;
+	uart_putc(c1);
+}
+
 void uart_master_work()
 {
 	static can_t msg;

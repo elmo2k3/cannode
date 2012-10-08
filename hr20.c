@@ -41,16 +41,6 @@ static uint8_t hr20_active;
 
 static uint8_t hexCharToInt(char c);
 
-static void hr20SerialCommand(char *buffer)
-{
-	char c;
-
-	while(c = *buffer++)
-	{
-		uart_putc(c);
-	}
-}
-
 static int hr20checkPlausibility()
 {
     if(hr20statusTemp.tempis < 500 || hr20statusTemp.tempis > 4000)
@@ -110,9 +100,9 @@ void hr20_work()
 	while(uart_data())
 	{
 		rxbyte=uart_getchar();
-		if(rxbyte == '\n' && recv_counter > 89)
+		if(rxbyte == '\n')
 		{
-			if(buffer[0] == 'D')
+			if(buffer[0] == 'D' && recv_counter > 89)
 			{
 				if((buffer[24] == '-') || (buffer[24] == 'A')) // mode is auto
 					hr20statusTemp.mode = 0;
@@ -153,6 +143,16 @@ void hr20_work()
 
 				hr20checkPlausibility();
 			}
+			else if(buffer[0] == 'R') /* R[ab]=cddd */
+			{
+				hr20status.last_timer.day = buffer[2]-'0';
+				hr20status.last_timer.slot = buffer[3]-'0';
+				hr20status.last_timer.mode = buffer[6]-'0';
+				hr20status.last_timer.time = buffer[9]-'0' +
+											 (buffer[8]-'0')*10 +
+											 (buffer[7]-'0')*100;
+				can_status_hr20_timer();
+			}
 			recv_counter = 0;
 		}
 		else
@@ -170,7 +170,7 @@ void hr20_request_status(void)
 {
     if(!hr20_active)
         return;
-	hr20SerialCommand("D\n");
+	uart_puts("D\n");
 }
 
 void parse_hr20_status(char *line, struct _hr20status *hr20status_temp)
@@ -235,6 +235,29 @@ void hr20SetDate(uint8_t year, uint8_t month, uint8_t day)
 	uart_putc('\n');
 }
 
+void hr20GetTimer(uint8_t day, uint8_t slot)
+{
+	if(day > 7)
+		return;
+	if(slot>9)
+		return;
+	uart_putc('R');
+	uart_putc(day+'0');
+	uart_putc(slot+'0');
+	uart_putc('\r');
+	uart_putc('\n');
+}
+
+void hr20SetTimer(uint8_t day, uint8_t slot, uint8_t mode, uint16_t time)
+{
+	uart_putc('W');
+	uart_putc(day+'0');
+	uart_putc(slot+'0');
+	uart_putc(mode+'0');
+	uart_putc_hex_XXX(time);
+	uart_putc('\r');
+	uart_putc('\n');
+}
 
 //int hr20SetAutoTemperature(int slot, int temperature)
 //{
@@ -258,7 +281,7 @@ void hr20SetModeManu()
 {
     if(!hr20_active)
         return;
-	hr20SerialCommand("M00\n");
+	uart_puts("M00\n");
 }
 
 /*!
@@ -271,7 +294,7 @@ void hr20SetModeAuto()
 {
     if(!hr20_active)
         return;
-	hr20SerialCommand("M01\n");
+	uart_puts("M01\n");
 }
 
 //static int16_t hr20GetAutoTemperature(int slot)

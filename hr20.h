@@ -3,6 +3,14 @@
 
 #include <stdint.h>
 
+struct _hr20timer
+{
+	uint8_t day;
+	uint8_t slot;
+	uint8_t mode;
+	uint16_t time;
+};
+
 /** struct holding complete status information from the hr20 device */
 struct _hr20status
 {
@@ -16,6 +24,7 @@ struct _hr20status
 	uint8_t error_code;
 	uint8_t window_open;
 	uint8_t data_valid;
+	struct _hr20timer last_timer;
 };
 
 extern struct _hr20status hr20status;
@@ -28,6 +37,8 @@ void hr20SetModeAuto(void);
 void hr20SetModeManu(void);
 void hr20SetDate(uint8_t year, uint8_t month, uint8_t day);
 void hr20SetTime(uint8_t hours, uint8_t mins, uint8_t secs);
+void hr20GetTimer(uint8_t day, uint8_t slot);
+void hr20SetTimer(uint8_t day, uint8_t slot, uint8_t mode, uint16_t time);
 
 #endif
 
