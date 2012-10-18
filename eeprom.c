@@ -44,7 +44,7 @@ void eeprom_set_bandgap(uint8_t set_bandgap)
 	eeprom_write_byte(&bandgap_eeprom, set_bandgap);
 }
 
-uint8_t eeprom_get_uart_master(void)
+uint8_t eeprom_get_mode(void)
 {
 	uint8_t uart_master;
 	

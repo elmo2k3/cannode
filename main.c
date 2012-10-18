@@ -24,7 +24,7 @@
 
 uint8_t address;
 uint8_t bandgap;
-uint8_t uart_master;
+uint8_t mode;
 volatile uint8_t refreshFlags;
 volatile uint32_t uptime;
 uint8_t relais_addresses[6];
@@ -64,13 +64,13 @@ int main()
 	address = eeprom_get_address();
 	eeprom_get_relais(relais_addresses, relais_relais);
 	bandgap = eeprom_get_bandgap();
-	uart_master = eeprom_get_uart_master();
+	mode = eeprom_get_mode();
 
 	PORTD = (1<<PD0); // pullup for rxd pin
 	DDRD = (1<<PD1); // output for tx pin
 
-	uart_master_init(uart_master);
-	hr20_init(!uart_master);
+	uart_master_init(mode == MODE_UART_MASTER);
+	hr20_init(mode == MODE_HR20);
 
     can_init(BITRATE_125_KBPS);
 	can_static_filter(can_filter);

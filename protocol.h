@@ -64,6 +64,14 @@ enum msg_type_status
 	MSG_STATUS_HR20_TIMER		= 13
 };
 
+enum node_mode
+{
+	MODE_HR20,
+	MODE_UART_MASTER,
+	MODE_HEIZUNG,
+	MODE_HEIZUNG_UART_MASTER
+};
+
 #define MSG_ID_MASTER_SLAVE 0x0F0
 
 #endif
