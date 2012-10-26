@@ -299,11 +299,11 @@ void can_parse_msg(can_t *msg)
 				hr20SetDate(msg->data[2], msg->data[3], msg->data[4]);
 				break;
 			case MSG_COMMAND_HR20_GET_TIMER:
-				hr20GetTimer(msg->data[2],msg->data[3]);
+			//	hr20GetTimer(msg->data[2],msg->data[3]);
 				break;
 			case MSG_COMMAND_HR20_SET_TIMER:
-				hr20SetTimer(msg->data[2],msg->data[3],msg->data[4],
-					(msg->data[5] << 8) + msg->data[6]);
+			//	hr20SetTimer(msg->data[2],msg->data[3],msg->data[4],
+			//		(msg->data[5] << 8) + msg->data[6]);
 				break;
 		}
 	}

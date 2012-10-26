@@ -40,6 +40,7 @@ struct _hr20status hr20status, hr20statusTemp;
 static uint8_t hr20_active;
 
 static uint8_t hexCharToInt(char c);
+static int hr20checkPlausibility(void);
 
 static int hr20checkPlausibility()
 {
@@ -191,16 +192,6 @@ void parse_hr20_auto_temperature(char *line)
                                               hexCharToInt(line[7]))*50;
 }
 
-/*!
- ********************************************************************************
- * hr20SetTemperature
- *
- * set the wanted temperature
- *
- * \param temperature the wanted temperature multiplied with 10. only steps
- *      of 5 are allowed
- * \returns returns 1 on success, 0 on failure
- *******************************************************************************/
 void hr20SetTemperature(uint8_t temperature)
 {
     if(!hr20_active)
@@ -237,46 +228,28 @@ void hr20SetDate(uint8_t year, uint8_t month, uint8_t day)
 
 void hr20GetTimer(uint8_t day, uint8_t slot)
 {
-	if(day > 7)
-		return;
-	if(slot>9)
-		return;
-	uart_putc('R');
-	uart_putc(day+'0');
-	uart_putc(slot+'0');
-	uart_putc('\r');
-	uart_putc('\n');
+//	if(day > 7)
+//		return;
+//	if(slot>9)
+//		return;
+//	uart_putc('R');
+//	uart_putc(day+'0');
+//	uart_putc(slot+'0');
+//	uart_putc('\r');
+//	uart_putc('\n');
 }
 
 void hr20SetTimer(uint8_t day, uint8_t slot, uint8_t mode, uint16_t time)
 {
-	uart_putc('W');
-	uart_putc(day+'0');
-	uart_putc(slot+'0');
-	uart_putc(mode+'0');
-	uart_putc_hex_XXX(time);
-	uart_putc('\r');
-	uart_putc('\n');
+//	uart_putc('W');
+//	uart_putc(day+'0');
+//	uart_putc(slot+'0');
+//	uart_putc(mode+'0');
+//	uart_putc_hex_XXX(time);
+//	uart_putc('\r');
+//	uart_putc('\n');
 }
 
-//int hr20SetAutoTemperature(int slot, int temperature)
-//{
-//    char buffer[16];
-//
-//    if(temperature % 5) // temperature may only be XX.5°C
-//        return 0;
-//
-//    sprintf(buffer,"S%02x%02x\r",slot+1, temperature/5);
-//    hr20SerialCommand(buffer);
-//    return 1;
-//}
-
-/*!
- ********************************************************************************
- * hr20SetModeManu
- *
- * set the mode to manual control
- *******************************************************************************/
 void hr20SetModeManu()
 {
     if(!hr20_active)
@@ -284,12 +257,6 @@ void hr20SetModeManu()
 	uart_puts("M00\n");
 }
 
-/*!
- ********************************************************************************
- * hr20SetModeAuto
- *
- * set the mode to automatic control
- *******************************************************************************/
 void hr20SetModeAuto()
 {
     if(!hr20_active)
@@ -297,70 +264,10 @@ void hr20SetModeAuto()
 	uart_puts("M01\n");
 }
 
-//static int16_t hr20GetAutoTemperature(int slot)
-//{
-//    int i;
-//    char buffer[255];
-//    char response[255];
-//    char *result;
-//    
-//    sprintf(buffer,"\rG%02x\r",slot+1);
-//    
-//    for(i=0;i<10;i++)
-//    {
-//        hr20SerialCommand(buffer, response);
-//        if(response[0] == 'G' )
-//            break;
-//        usleep(1000);
-//    }
-//    if(response[0] == 'G' && response[5] == '=')
-//    {
-//        result = strtok(response,"=");
-//        result = strtok(NULL,"=");
-//    
-//        return (hexCharToInt(result[0])*16 + hexCharToInt(result[1]))*50;
-//    }
-//    else
-//        return 0;
-//}
-
 static uint8_t hexCharToInt(char c)
 {
     if(c <= 57)
         return c - 48;
     return c - 87;
 }
-
-//float hr20GetTemperatureIs()
-//{
-//    return hr20status.tempis / 100.0;
-//}
-//
-//float hr20GetAutoTemperature(int slot)
-//{
-//    if(slot < 0 || slot > 3)
-//        return 0.0;
-//    return hr20status.auto_temperature[slot] / 100.0;
-//}
-//
-//float hr20GetTemperatureSet()
-//{
-//    return hr20status.tempset / 100.0;
-//}
-//
-//float hr20GetVoltage()
-//{
-//    return hr20status.voltage / 1000.0;
-//}
-
-//int   hr20GetValve()
-//{
-//    return hr20status.valve;
-//}
-//
-//int   hr20GetMode()
-//{
-//    return hr20status.mode;
-//}
-
 

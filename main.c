@@ -17,7 +17,7 @@
 #include "can_routines.h"
 #include "hr20.h"
 
-#define FLAG_125MS 1
+#define FLAG_250MS 1
 #define FLAG_1S 2
 
 #define DEBOUNCE 256
@@ -104,10 +104,10 @@ int main()
 			can_parse_msg(&msg_rx);
 			uart_put_can_msg(&msg_rx);
 		}
-		if(refreshFlags & (1<<FLAG_125MS))
+		if(refreshFlags & (1<<FLAG_250MS))
 		{
 			can_status_relais();
-			refreshFlags &= ~(1<<FLAG_125MS);
+			refreshFlags &= ~(1<<FLAG_250MS);
 		}
 		if(refreshFlags & (1<<FLAG_1S))
 		{
@@ -138,7 +138,7 @@ void timer_init()
 
 ISR(SIG_OUTPUT_COMPARE1A) {
 	static uint8_t prescaler_1s = (uint8_t)DEBOUNCE;
-	static uint8_t prescaler_125ms = (uint8_t)(DEBOUNCE/8);
+	static uint8_t prescaler_250ms = (uint8_t)(DEBOUNCE/4);
 #if F_CPU % DEBOUNCE                     // bei rest
     OCR1A = F_CPU / DEBOUNCE - 1;      // compare DEBOUNCE - 1 times
 #endif
@@ -154,10 +154,10 @@ ISR(SIG_OUTPUT_COMPARE1A) {
 		refreshFlags |= (1<<FLAG_1S);
 	}
 
-    if( --prescaler_125ms == 0 )// every 125ms
+    if( --prescaler_250ms == 0 )// every 250ms
 	{
-        prescaler_125ms = (uint8_t)(DEBOUNCE/8);
-		refreshFlags |= (1<<FLAG_125MS);
+        prescaler_250ms = (uint8_t)(DEBOUNCE/4);
+		refreshFlags |= (1<<FLAG_250MS);
 	}
 }
 
