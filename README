@@ -1,0 +1,6 @@
+cannode
+
+Bjoern Biesenbach <bjoern@bjoern-b.de>
+
+Software for my atmega8 cannode with mcp2515.
+Uses the can library from http://www.kreatives-chaos.com/
