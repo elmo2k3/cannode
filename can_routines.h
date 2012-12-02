@@ -12,6 +12,7 @@ void can_set_relais(uint8_t address, uint8_t relais, uint8_t state);
 void can_status_hr20(void);
 void can_status_voltage(void);
 void can_status_hr20_timer(void);
+void can_routines_send_msg(uint8_t *data, uint8_t length, uint8_t ack_req);
 
 #endif
 

@@ -144,16 +144,16 @@ void hr20_work()
 
 				hr20checkPlausibility();
 			}
-			else if(buffer[0] == 'R') /* R[ab]=cddd */
-			{
-				hr20status.last_timer.day = buffer[2]-'0';
-				hr20status.last_timer.slot = buffer[3]-'0';
-				hr20status.last_timer.mode = buffer[6]-'0';
-				hr20status.last_timer.time = buffer[9]-'0' +
-											 (buffer[8]-'0')*10 +
-											 (buffer[7]-'0')*100;
-				can_status_hr20_timer();
-			}
+			//else if(buffer[0] == 'R') /* R[ab]=cddd */
+			//{
+			//	hr20status.last_timer.day = buffer[2]-'0';
+			//	hr20status.last_timer.slot = buffer[3]-'0';
+			//	hr20status.last_timer.mode = buffer[6]-'0';
+			//	hr20status.last_timer.time = buffer[9]-'0' +
+			//								 (buffer[8]-'0')*10 +
+			//								 (buffer[7]-'0')*100;
+			//	can_status_hr20_timer();
+			//}
 			recv_counter = 0;
 		}
 		else

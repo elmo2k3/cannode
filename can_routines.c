@@ -16,131 +16,117 @@
 void (*reset)( void ) = (void*)0x0000;
 void (*bootloader)( void ) = (void*)0x1C00;
 
-void can_set_relais(uint8_t to_address, uint8_t relais, uint8_t state)
+void can_routines_send_msg(uint8_t *data, uint8_t length, uint8_t ack_req)
 {
 	can_t msg;
+	uint8_t i;
 	
 	msg.id = address;
 	msg.flags.rtr = 0;
 	msg.flags.extended = 0;
 
-	msg.id = 0x0F0;
-	msg.length = 4;
-	msg.data[0] = MSG_COMMAND_RELAIS;
-	msg.data[1] = to_address;
-	msg.data[2] = relais;
-	msg.data[3] = state;
+	msg.length = length;
+	for(i=0; i<length; i++)
+	{
+		msg.data[i] = data[i];
+	}
 	can_parse_msg(&msg); // parse message as it might be directly for us
-	can_send_message(&msg);
 	uart_put_can_msg(&msg);
+	
+	while(!can_send_message(&msg));
+}
+
+void can_set_relais(uint8_t to_address, uint8_t relais, uint8_t state)
+{
+	uint8_t data[4];
+	data[0] = MSG_COMMAND_RELAIS;
+	data[1] = to_address;
+	data[2] = relais;
+	data[3] = state;
+	can_routines_send_msg(data,4,1);
 }
 
 void can_status_powerup(void)
 {
-    can_t msg;
-	msg.flags.rtr = 0;
-	msg.id  = address; // slave to master
-	msg.flags.extended = 0;
-
-	msg.length = 3;
-	msg.data[0] = MSG_COMMAND_STATUS;
-	msg.data[1] = address;
-	msg.data[2] = MSG_STATUS_POWERUP;
-	
-	can_send_message(&msg);
-	uart_put_can_msg(&msg);
+	uint8_t data[3];
+	data[0] = MSG_COMMAND_STATUS;
+	data[1] = address;
+	data[2] = MSG_STATUS_POWERUP;
+	can_routines_send_msg(data,3,0);
 }
 
 void can_status_hr20(void)
 {
 	uint8_t time_no_data;
+	uint8_t data[8];
 
-    can_t msg;
-	msg.flags.extended = 0;
-	msg.flags.rtr = 0;
-	msg.id  = address; // slave to master
-	msg.length = 8;
-	msg.data[0] = MSG_COMMAND_STATUS;
-	msg.data[1] = address;
-	msg.data[2] = MSG_STATUS_HR20_TEMPS;
-	msg.data[3] = hr20status.data_valid | hr20status.mode << 1 | hr20status.window_open << 2;
-	msg.data[4] = hr20status.tempis >> 8;
-	msg.data[5] = hr20status.tempis & 0xFF;
-	msg.data[6] = hr20status.tempset >> 8;
-	msg.data[7] = hr20status.tempset & 0xFF;
-	while(!can_send_message(&msg));
+	data[0] = MSG_COMMAND_STATUS;
+	data[1] = address;
+	data[2] = MSG_STATUS_HR20_TEMPS;
+	data[3] = hr20status.data_valid | hr20status.mode << 1 | hr20status.window_open << 2;
+	data[4] = hr20status.tempis >> 8;
+	data[5] = hr20status.tempis & 0xFF;
+	data[6] = hr20status.tempset >> 8;
+	data[7] = hr20status.tempset & 0xFF;
+	can_routines_send_msg(data,8,1);
 	
 	if((uptime - hr20status.data_timestamp) > 255)
 		time_no_data = 255;
 	else
 		time_no_data = uptime - hr20status.data_timestamp;
 
-	msg.data[2] = MSG_STATUS_HR20_VALVE_VOLT;
-	msg.data[3] = time_no_data;
-	msg.data[4] = hr20status.valve;
-	msg.data[5] = hr20status.voltage >> 8;
-	msg.data[6] = hr20status.voltage & 0xFF;
-	msg.data[7] = hr20status.error_code;
-	while(!can_send_message(&msg));
+	data[2] = MSG_STATUS_HR20_VALVE_VOLT;
+	data[3] = time_no_data;
+	data[4] = hr20status.valve;
+	data[5] = hr20status.voltage >> 8;
+	data[6] = hr20status.voltage & 0xFF;
+	data[7] = hr20status.error_code;
+	can_routines_send_msg(data,8,1);
 }
 
-void can_status_hr20_timer(void)
-{
-    can_t msg;
-	msg.flags.extended = 0;
-	msg.flags.rtr = 0;
-	msg.id  = address; // slave to master
-	msg.length = 8;
-	msg.data[0] = MSG_COMMAND_STATUS;
-	msg.data[1] = address;
-	msg.data[2] = MSG_STATUS_HR20_TIMER;
-	msg.data[3] = hr20status.last_timer.day;
-	msg.data[4] = hr20status.last_timer.slot;
-	msg.data[5] = hr20status.last_timer.mode;
-	msg.data[6] = hr20status.last_timer.time >> 8;
-	msg.data[7] = hr20status.last_timer.time &0xFF;
-	while(!can_send_message(&msg));
-}
+//void can_status_hr20_timer(void)
+//{
+//    can_t msg;
+//	msg.flags.extended = 0;
+//	msg.flags.rtr = 0;
+//	msg.id  = address; // slave to master
+//	msg.length = 8;
+//	msg.data[0] = MSG_COMMAND_STATUS;
+//	msg.data[1] = address;
+//	msg.data[2] = MSG_STATUS_HR20_TIMER;
+//	msg.data[3] = hr20status.last_timer.day;
+//	msg.data[4] = hr20status.last_timer.slot;
+//	msg.data[5] = hr20status.last_timer.mode;
+//	msg.data[6] = hr20status.last_timer.time >> 8;
+//	msg.data[7] = hr20status.last_timer.time &0xFF;
+//	while(!can_send_message(&msg));
+//}
 
 void can_status_relais(void)
 {
-    can_t msg;
-	msg.flags.extended = 0;
-	msg.flags.rtr = 0;
-	msg.id  = address; // slave to master
-	msg.length = 4;
-	msg.data[0] = MSG_COMMAND_STATUS;
-	msg.data[1] = address;
-	msg.data[2] = MSG_STATUS_RELAIS;
-	msg.data[3] = relais_get();
-
-	can_parse_msg(&msg); // parse message as it might be directly for us
-	while(!can_send_message(&msg));
-	uart_put_can_msg(&msg);
+	uint8_t data[4];
+	
+	data[0] = MSG_COMMAND_STATUS;
+	data[1] = address;
+	data[2] = MSG_STATUS_RELAIS;
+	data[3] = relais_get();
+	
+	can_routines_send_msg(data,4,0);
 }
 
 void can_status_relais_eeprom(void)
 {
-    can_t msg;
+	uint8_t data[5];
 	uint8_t i;
 
-	msg.flags.extended = 0;
-	msg.flags.rtr = 0;
-	msg.id  = address; // slave to master
-	msg.length = 5;
-
-	i = 0;
-	while(i<6)
+	for(i=0;i<6;i++)
 	{
-		msg.data[0] = MSG_COMMAND_STATUS;
-		msg.data[1] = address;
-		msg.data[2] = MSG_STATUS_EEPROM_RELAIS1 + i;
-		msg.data[3] = relais_addresses[i];
-		msg.data[4] = relais_relais[i];
-
-		uart_put_can_msg(&msg);
-		if(can_send_message(&msg)) // successfull
-			i++;
+		data[0] = MSG_COMMAND_STATUS;
+		data[1] = address;
+		data[2] = MSG_STATUS_EEPROM_RELAIS1 + i;
+		data[3] = relais_addresses[i];
+		data[4] = relais_relais[i];
+		can_routines_send_msg(data,5,1);
 	}
 }
 
@@ -148,23 +134,18 @@ void can_status_uptime(void)
 {
 	uint16_t voltage;
 	voltage = getBatteryVoltage();
+	uint8_t data[8];
 
-    can_t msg;
-	msg.flags.extended = 0;
-	msg.flags.rtr = 0;
-	msg.id  = address; // slave to master
-	msg.length = 8;
-	msg.data[0] = MSG_COMMAND_STATUS;
-	msg.data[1] = address;
-	msg.data[2] = MSG_STATUS_UPTIME;
-	msg.data[3] = ((uptime >>24) & 0x0F) | (VERSION<<4); // put version number in highest nibble
-	msg.data[4] = (uptime >>16) & 0xFF;
-	msg.data[5] = (uptime >>8) & 0xFF;
-	msg.data[6] = uptime & 0xFF;
-	msg.data[7] = voltage & 0xFF;
+	data[0] = MSG_COMMAND_STATUS;
+	data[1] = address;
+	data[2] = MSG_STATUS_UPTIME;
+	data[3] = ((uptime >>24) & 0x0F) | (VERSION<<4); // put version number in highest nibble
+	data[4] = (uptime >>16) & 0xFF;
+	data[5] = (uptime >>8) & 0xFF;
+	data[6] = uptime & 0xFF;
+	data[7] = voltage & 0xFF;
 
-	can_send_message(&msg);
-	uart_put_can_msg(&msg);
+	can_routines_send_msg(data,8,0);
 }
 
 void can_parse_msg(can_t *msg)
