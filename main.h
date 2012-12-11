@@ -1,7 +1,7 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#define VERSION 7
+#define VERSION 8
 
 #define UART_MASTER
 

@@ -33,7 +33,7 @@ uint8_t relais_relais[6];
 void timer_init(void);
 
 // every node receives everything
-const prog_uint8_t can_filter[] = {
+const uint8_t can_filter[] = {
 	// Group 0
 	MCP2515_FILTER(0),				// Filter 0
 	MCP2515_FILTER(0),				// Filter 1
@@ -136,7 +136,7 @@ void timer_init()
     TIMSK = (1<<OCIE1A);
 }
 
-ISR(SIG_OUTPUT_COMPARE1A) {
+ISR(TIMER1_COMPA_vect) {
 	static uint8_t prescaler_1s = (uint8_t)DEBOUNCE;
 	static uint8_t prescaler_250ms = (uint8_t)(DEBOUNCE/4);
 #if F_CPU % DEBOUNCE                     // bei rest
