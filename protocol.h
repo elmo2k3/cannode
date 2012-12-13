@@ -54,12 +54,12 @@ enum msg_type_status
 	MSG_STATUS_HR20_TIMER		= 13
 };
 
-enum node_mode
+enum node_features
 {
-	MODE_HR20,
-	MODE_UART_MASTER,
-	MODE_HEIZUNG,
-	MODE_HEIZUNG_UART_MASTER
+	MODE_HR20 = 1,
+	MODE_UART_MASTER = 2,
+	MODE_HEIZUNGS_MASTER = 4,
+	MODE_BLUBB_COUNTER = 8
 };
 
 #endif

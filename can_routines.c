@@ -132,7 +132,7 @@ void can_status_relais_eeprom(void)
 
 void can_status_uptime(void)
 {
-	uint16_t voltage;
+	uint8_t voltage;
 	voltage = getBatteryVoltage();
 	uint8_t data[8];
 
@@ -143,7 +143,7 @@ void can_status_uptime(void)
 	data[4] = (uptime >>16) & 0xFF;
 	data[5] = (uptime >>8) & 0xFF;
 	data[6] = uptime & 0xFF;
-	data[7] = voltage & 0xFF;
+	data[7] = voltage;
 
 	can_routines_send_msg(data,8,0);
 }

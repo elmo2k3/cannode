@@ -24,7 +24,7 @@
 
 uint8_t address;
 uint8_t bandgap;
-uint8_t mode;
+volatile uint8_t mode;
 volatile uint8_t refreshFlags;
 volatile uint32_t uptime;
 uint8_t relais_addresses[6];
@@ -33,7 +33,7 @@ uint8_t relais_relais[6];
 void timer_init(void);
 
 // every node receives everything
-const uint8_t can_filter[] = {
+const prog_uint8_t can_filter[] = {
 	// Group 0
 	MCP2515_FILTER(0),				// Filter 0
 	MCP2515_FILTER(0),				// Filter 1
@@ -69,8 +69,9 @@ int main()
 	PORTD = (1<<PD0); // pullup for rxd pin
 	DDRD = (1<<PD1); // output for tx pin
 
-	uart_master_init(mode == MODE_UART_MASTER);
-	hr20_init(mode == MODE_HR20);
+	uart_master_init((mode & MODE_UART_MASTER)!=0);
+	hr20_init((mode & MODE_HR20)!=0);
+	adc_blubb_init((mode & MODE_BLUBB_COUNTER)!=0);
 
     can_init(BITRATE_125_KBPS);
 	can_static_filter(can_filter);
@@ -88,14 +89,17 @@ int main()
     {
 		uart_master_work();
 		hr20_work();
-		for(i=0;i<6;i++)
+		if(!(mode & MODE_BLUBB_COUNTER))
 		{
-			if(get_key_press(1<<KEYS[i]))
+			for(i=0;i<6;i++)
 			{
-				if(DDRC & (1<<KEYS[i])) // LED is on
-					can_set_relais(relais_addresses[i], relais_relais[i],0);
-				else
-					can_set_relais(relais_addresses[i], relais_relais[i],1);
+				if(get_key_press(1<<KEYS[i]))
+				{
+					if(DDRC & (1<<KEYS[i])) // LED is on
+						can_set_relais(relais_addresses[i], relais_relais[i],0);
+					else
+						can_set_relais(relais_addresses[i], relais_relais[i],1);
+				}
 			}
 		}
 
@@ -136,21 +140,30 @@ void timer_init()
     TIMSK = (1<<OCIE1A);
 }
 
-ISR(TIMER1_COMPA_vect) {
+ISR(TIMER1_COMPA_vect) { // called every 1/256s = 4ms
 	static uint8_t prescaler_1s = (uint8_t)DEBOUNCE;
 	static uint8_t prescaler_250ms = (uint8_t)(DEBOUNCE/4);
 #if F_CPU % DEBOUNCE                     // bei rest
     OCR1A = F_CPU / DEBOUNCE - 1;      // compare DEBOUNCE - 1 times
 #endif
 
-	buttons_every_10_ms();
+	if(mode & MODE_BLUBB_COUNTER)
+	{
+		adc_blubb_cyclic();
+	}
+	else
+	{
+		buttons_every_10_ms();
+	}
+
     if( --prescaler_1s == 0 )// every second
 	{
         prescaler_1s = (uint8_t)DEBOUNCE;
 #if F_CPU % DEBOUNCE         // handle remainder
         OCR1A = F_CPU / DEBOUNCE + F_CPU % DEBOUNCE - 1; // compare once per second
 #endif
-		uptime++;
+		if(!(mode & MODE_BLUBB_COUNTER))
+			uptime++;
 		refreshFlags |= (1<<FLAG_1S);
 	}
 

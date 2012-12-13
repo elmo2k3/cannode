@@ -77,7 +77,7 @@ $(patsubst %,-I%,$(EXTRAINCDIRS))
 #CFLAGS += -std=c89
 #CFLAGS += -std=gnu89
 #CFLAGS += -std=c99
-CFLAGS += -std=gnu99 -D F_CPU=8000000 -D F_OSC=F_CPU -I../canlib/src
+CFLAGS += -std=gnu99 -D F_CPU=8000000 -D F_OSC=F_CPU -I../canlib/src -D__PROG_TYPES_COMPAT__
 
 
 
