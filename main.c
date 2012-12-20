@@ -143,13 +143,18 @@ void timer_init()
 ISR(TIMER1_COMPA_vect) { // called every 1/256s = 4ms
 	static uint8_t prescaler_1s = (uint8_t)DEBOUNCE;
 	static uint8_t prescaler_250ms = (uint8_t)(DEBOUNCE/4);
+	static uint8_t prescaler_25ms = (uint8_t)(DEBOUNCE/40);
 #if F_CPU % DEBOUNCE                     // bei rest
     OCR1A = F_CPU / DEBOUNCE - 1;      // compare DEBOUNCE - 1 times
 #endif
 
 	if(mode & MODE_BLUBB_COUNTER)
 	{
-		adc_blubb_cyclic();
+		if(--prescaler_25ms == 0)
+		{
+			prescaler_25ms = (uint8_t)(DEBOUNCE/40);
+			adc_blubb_cyclic();
+		}
 	}
 	else
 	{
@@ -162,8 +167,7 @@ ISR(TIMER1_COMPA_vect) { // called every 1/256s = 4ms
 #if F_CPU % DEBOUNCE         // handle remainder
         OCR1A = F_CPU / DEBOUNCE + F_CPU % DEBOUNCE - 1; // compare once per second
 #endif
-		if(!(mode & MODE_BLUBB_COUNTER))
-			uptime++;
+		uptime++;
 		refreshFlags |= (1<<FLAG_1S);
 	}
 

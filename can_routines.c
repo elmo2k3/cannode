@@ -12,6 +12,7 @@
 #include "eeprom.h"
 #include "hr20.h"
 #include "adc.h"
+#include "main.h"
 
 void (*reset)( void ) = (void*)0x0000;
 void (*bootloader)( void ) = (void*)0x1C00;
@@ -139,12 +140,23 @@ void can_status_uptime(void)
 	data[0] = MSG_COMMAND_STATUS;
 	data[1] = address;
 	data[2] = MSG_STATUS_UPTIME;
-	data[3] = ((uptime >>24) & 0x0F) | (VERSION<<4); // put version number in highest nibble
-	data[4] = (uptime >>16) & 0xFF;
-	data[5] = (uptime >>8) & 0xFF;
-	data[6] = uptime & 0xFF;
+	if(mode & MODE_BLUBB_COUNTER)
+	{
+		data[3] = ((0 >>24) & 0x0F) | (VERSION<<4); // put version number in highest nibble
+		data[4] = (0 >>16) & 0xFF;
+		data[5] = (adc_blubb_value >>8) & 0xFF;
+		data[6] = adc_blubb_value & 0xFF;
+	}
+	else
+	{
+		data[3] = ((uptime >>24) & 0x0F) | (VERSION<<4); // put version number in highest nibble
+		data[4] = (uptime >>16) & 0xFF;
+		data[5] = (uptime >>8) & 0xFF;
+		data[6] = uptime & 0xFF;
+	}
 	data[7] = voltage;
 
+	can_routines_send_msg(data,8,0);
 	can_routines_send_msg(data,8,0);
 }
 

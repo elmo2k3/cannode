@@ -11,6 +11,7 @@ extern uint8_t relais_relais[];
 
 extern uint8_t address;
 extern uint8_t bandgap;
+extern volatile uint8_t mode;
 
 #endif
 
