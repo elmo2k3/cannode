@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2011-2012 Bjoern Biesenbach <bjoern@bjoern-b.de>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public
+ * License along with this program; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ */
 #include <avr/io.h>
 #include <util/delay.h>
 
@@ -109,8 +127,7 @@ void uart_master_work()
 				
 				case 3:		msg.length = (rxbyte-48) << 4; break; //length
 				case 4:		msg.length |= (rxbyte-48) << 0; break; //length
-
-				case 5:		msg.data[0] = (rxbyte-48) << 4; break; //command
+				/*case 5:		msg.data[0] = (rxbyte-48) << 4; break; //command
 				case 6:		msg.data[0] |= (rxbyte-48) << 0; break; // command
 				
 				case 7:		msg.data[1] = (rxbyte-48) << 4; break; //address
@@ -127,7 +144,18 @@ void uart_master_work()
 				case 17:	msg.data[6] = (rxbyte-48) << 4; break;
 				case 18:	msg.data[6] |= (rxbyte-48) << 0; break;
 				case 19:	msg.data[7] = (rxbyte-48) << 4; break;
-				case 20:	msg.data[7] |= (rxbyte-48) << 0; break;
+				case 20:	msg.data[7] |= (rxbyte-48) << 0; break;*/
+				// shorter and flash saving: 
+				default:	if((recv_counter-5) % 2)
+								msg.data[(recv_counter-5-(recv_counter-5)%2)/2] = (rxbyte-48) << 0;
+							else
+								msg.data[(recv_counter-5-(recv_counter-5)%2)/2] = (rxbyte-48) << 4;
+							break;
+				// next stage:  6 bytes MORE
+				/*default:
+								msg.data[(recv_counter-5-(recv_counter-5)%2)/2] = (rxbyte-48) << ((recv_counter -4)%2)*4;
+							break;
+				*/
 			}
 
 			if(recv_counter > 8 && recv_counter > (msg.length*2 + 4))
