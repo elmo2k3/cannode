@@ -19,6 +19,7 @@
 #include <avr/io.h>
 #include "main.h"
 #include "adc.h"
+#include "config.h"
 
 uint8_t adc_blubb_active;
 
@@ -27,6 +28,7 @@ uint8_t adc_blubb_active;
 #define BLUBB_MIN_TIME 10 // 10 * 4ms = 40ms
 #define BLUBB_MAX_TIME 40 // 40 * 4ms = 160ms
 
+#ifdef _WITH_BLUBB_COUNTER_
 uint16_t adc_blubb_value;
 uint8_t adc_blubb_edge_detected;
 uint8_t adc_blubb_time_detected;
@@ -125,6 +127,16 @@ void adc_blubb_cyclic() // every 25ms
 
 	ADCSRA |= 1<<ADSC;
 }
+#else // ifdef blubb_counter
+void adc_blubb_init(uint8_t set_active)
+{
+}
+
+void adc_blubb_cyclic()
+{
+}
+#endif
+
 
 uint8_t getBatteryVoltage()
 {
