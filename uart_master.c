@@ -28,6 +28,8 @@
 static uint8_t uart_master_active;
 static uint8_t uart_master_global_activated;
 
+void uart_putc_id_hex(uint16_t c);
+
 void uart_master_init(uint8_t activated)
 {
 //	uart_master_active = activated;
@@ -49,9 +51,8 @@ void uart_put_can_msg(can_t *msg)
 		return;
 
 	uart_putc('t');
-	uart_putc_hex(msg->id >> 8);
-	uart_putc_hex(msg->id >> 0);
-	uart_putc_hex(msg->length);
+	uart_putc_id_hex(msg->id);
+	uart_putc(msg->length+48); // can only be 0-8
 	for(i=0;i<msg->length;i++)
 	{
 		uart_putc_hex(msg->data[i]);
@@ -59,6 +60,25 @@ void uart_put_can_msg(can_t *msg)
 	uart_puts("\r");
 }
 
+void uart_putc_id_hex(uint16_t c)
+{
+	char c1;
+
+	c1 = (c >> 8 & 0x0F) + 48;
+	if(c1 > 0x39)
+		c1 += 39;
+	uart_putc(c1);
+
+	c1 = (c >> 4 & 0x0F) + 48;
+	if(c1 > 0x39)
+		c1 += 39;
+	uart_putc(c1);
+	
+	c1 = (c & 0x0F) + 48;
+	if(c1 > 0x39)
+		c1 += 39;
+	uart_putc(c1);
+}
 void uart_putc_hex(uint8_t c)
 {
 	char c1;
@@ -144,12 +164,18 @@ void uart_master_work()
 					}
 					else // success
 					{
-						uart_putc('S');
 						uart_putc('\r');
 					}
 					break;
 				case 's':	// setup can-bitrate manually
-					uart_putc(7);
+					if(recv_counter != 5)
+					{
+						uart_putc(7);
+					}
+					else // success
+					{
+						uart_putc('\r');
+					}
 					break;
 				case 'O':
 					if(recv_counter != 1)
@@ -192,6 +218,73 @@ void uart_master_work()
 						uart_putc(7);
 					}
 					break;
+				case 'F': // read status flag
+					if(recv_counter != 1)
+					{
+						uart_putc(7);
+					}
+					else
+					{
+						uart_putc('F');
+						uart_putc('0');
+						uart_putc('0');
+						uart_putc('\r');
+					}
+					break;
+
+				case 'M': // acceptance code register
+					if(recv_counter != 9)
+					{
+						uart_putc(7);
+					}
+					else
+					{
+						uart_putc('\r');
+					}
+					break;
+				
+				case 'm': // acceptance mask register
+					if(recv_counter != 9)
+					{
+						uart_putc(7);
+					}
+					else
+					{
+						uart_putc('\r');
+					}
+					break;
+				
+				case 'V': // version
+					if(recv_counter != 1)
+					{
+						uart_putc(7);
+					}
+					else
+					{
+						uart_puts("V0101\r");
+					}
+					break;
+				case 'N': // serial
+					if(recv_counter != 1)
+					{
+						uart_putc(7);
+					}
+					else
+					{
+						uart_puts("N0101\r");
+					}
+					break;
+				case 'Z': // timestamp
+					if(recv_counter != 2)
+					{
+						uart_putc(7);
+					}
+					else
+					{
+						uart_putc('\r');
+					}
+					break;
+
 				default:
 					uart_putc(7);
 			}
