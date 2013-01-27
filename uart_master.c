@@ -22,11 +22,13 @@
 #include "can_routines.h"
 #include "uart.h"
 #include "uart_master.h"
+#include "main.h"
 
 #define UART_BAUDRATE 38400
 
 static uint8_t uart_master_active;
 static uint8_t uart_master_global_activated;
+static uint8_t timestamp_enabled;
 
 void uart_putc_id_hex(uint16_t c);
 
@@ -57,6 +59,11 @@ void uart_put_can_msg(can_t *msg)
 	{
 		uart_putc_hex(msg->data[i]);
 	}
+	if(timestamp_enabled)
+	{
+		uart_putc_hex(uptime_miliseconds >> 8);
+		uart_putc_hex(uptime_miliseconds & 0xFF);
+	}
 	uart_puts("\r");
 }
 
@@ -83,26 +90,6 @@ void uart_putc_hex(uint8_t c)
 {
 	char c1;
 
-	c1 = (c >> 4 & 0x0F) + 48;
-	if(c1 > 0x39)
-		c1 += 39;
-	uart_putc(c1);
-	
-	c1 = (c & 0x0F) + 48;
-	if(c1 > 0x39)
-		c1 += 39;
-	uart_putc(c1);
-}
-
-void uart_putc_hex_XXX(uint16_t c)
-{
-	char c1;
-
-	c1 = (c >> 8 & 0x0F) + 48;
-	if(c1 > 0x39)
-		c1 += 39;
-	uart_putc(c1);
-	
 	c1 = (c >> 4 & 0x0F) + 48;
 	if(c1 > 0x39)
 		c1 += 39;
@@ -281,6 +268,14 @@ void uart_master_work()
 					}
 					else
 					{
+						if(rxbuf[1] == '0')
+						{
+							timestamp_enabled = 0;
+						}
+						else
+						{
+							timestamp_enabled = 1;
+						}
 						uart_putc('\r');
 					}
 					break;

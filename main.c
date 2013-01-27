@@ -45,6 +45,7 @@ uint8_t bandgap;
 volatile uint8_t mode;
 volatile uint8_t refreshFlags;
 volatile uint32_t uptime;
+volatile uint16_t uptime_miliseconds;
 uint8_t relais_addresses[6];
 uint8_t relais_relais[6];
 
@@ -165,6 +166,10 @@ ISR(TIMER1_COMPA_vect) { // called every 1/256s = 4ms
 #if F_CPU % DEBOUNCE                     // bei rest
     OCR1A = F_CPU / DEBOUNCE - 1;      // compare DEBOUNCE - 1 times
 #endif
+
+	uptime_miliseconds += 4;
+	if(uptime_miliseconds > 0xEA5F) // 60seconds
+		uptime_miliseconds = 0;
 
 	if(mode & MODE_BLUBB_COUNTER)
 	{

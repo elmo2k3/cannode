@@ -24,6 +24,7 @@
 #define UART_MASTER
 
 extern volatile uint32_t uptime;
+extern volatile uint16_t uptime_miliseconds;
 extern uint8_t relais_addresses[];
 extern uint8_t relais_relais[];
 
