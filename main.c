@@ -40,7 +40,7 @@
 
 #define DEBOUNCE 256
 
-uint8_t address;
+uint8_t own_address;
 uint8_t bandgap;
 volatile uint8_t mode;
 volatile uint8_t refreshFlags;
@@ -80,7 +80,7 @@ int main()
 	LED4_OFF();
 	LED5_OFF();
 	
-	address = eeprom_get_address();
+	own_address = eeprom_get_address();
 	eeprom_get_relais(relais_addresses, relais_relais);
 	bandgap = eeprom_get_bandgap();
 	mode = eeprom_get_mode();
@@ -97,8 +97,6 @@ int main()
 
 	timer_init();
 	relais_init();
-	
-	can_status_powerup();
 	
 	sei();
 	
@@ -124,8 +122,8 @@ int main()
 
 		if(can_check_message() && can_get_message(&msg_rx))
 		{
-			can_parse_msg(&msg_rx);
-			uart_put_can_msg(&msg_rx);
+			can_parse_msg(&msg_rx); // parse message in can_routines.c
+			uart_put_can_msg(&msg_rx); // output received message on uart
 		}
 		if(refreshFlags & (1<<FLAG_250MS))
 		{

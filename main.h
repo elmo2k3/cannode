@@ -19,7 +19,7 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#define VERSION 9
+#define VERSION 16
 
 #define UART_MASTER
 
@@ -28,7 +28,7 @@ extern volatile uint16_t uptime_miliseconds;
 extern uint8_t relais_addresses[];
 extern uint8_t relais_relais[];
 
-extern uint8_t address;
+extern uint8_t own_address;
 extern uint8_t bandgap;
 extern volatile uint8_t mode;
 

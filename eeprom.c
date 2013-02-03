@@ -26,9 +26,9 @@
 #define BANDGAP_NULL 123
 #define UART_MASTER_NULL 0
 
-uint8_t uart_master_eeprom EEMEM;
+uint8_t uart_master_eeprom EEMEM = 0x01;
 uint8_t bandgap_eeprom EEMEM;
-uint8_t address_eeprom EEMEM;
+uint8_t address_eeprom EEMEM = 21;
 uint8_t relais_addresses_eeprom[6] EEMEM;
 uint8_t relais_relais_eeprom[6] EEMEM;
 
@@ -96,15 +96,18 @@ void eeprom_get_relais(uint8_t *addresses, uint8_t *relais)
 
 void eeprom_set_address(uint8_t set_address)
 {
-	address = set_address;
+	own_address = set_address;
 	eeprom_write_byte(&address_eeprom, set_address);
 }
 
-void eeprom_set_relais(uint8_t key, uint8_t address, uint8_t relais)
+void eeprom_set_button_address(uint8_t key, uint8_t address)
 {
 	relais_addresses[key] = address;
-	relais_relais[key] = relais;
 	eeprom_write_byte(&relais_addresses_eeprom[key], address);
-	eeprom_write_byte(&relais_relais_eeprom[key], relais);
 }
 
+void eeprom_set_button_relais(uint8_t key, uint8_t relais)
+{
+	relais_relais[key] = relais;
+	eeprom_write_byte(&relais_relais_eeprom[key], relais);
+}
