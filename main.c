@@ -90,7 +90,9 @@ int main()
 
 	uart_master_init((mode & MODE_UART_MASTER)!=0);
 	hr20_init((mode & MODE_HR20)!=0);
+#ifdef _WITH_BLUBB_COUNTER_
 	adc_blubb_init((mode & MODE_BLUBB_COUNTER)!=0);
+#endif
 
     can_init(BITRATE_125_KBPS);
 	can_static_filter(can_filter);
@@ -133,11 +135,14 @@ int main()
 		if(refreshFlags & (1<<FLAG_1S))
 		{
 			can_status_uptime();
-			can_status_hr20();
-			if(++minute_counter == 60)
+			if(mode & MODE_HR20)
 			{
-				hr20_request_status();
-				minute_counter = 0;
+				can_status_hr20();
+				if(++minute_counter == 60)
+				{
+					hr20_request_status();
+					minute_counter = 0;
+				}
 			}
 			refreshFlags &= ~(1<<FLAG_1S);
 		}
@@ -171,11 +176,13 @@ ISR(TIMER1_COMPA_vect) { // called every 1/256s = 4ms
 
 	if(mode & MODE_BLUBB_COUNTER)
 	{
+#ifdef _WITH_BLUBB_COUNTER_
 		if(--prescaler_25ms == 0)
 		{
 			prescaler_25ms = (uint8_t)(DEBOUNCE/40);
 			adc_blubb_cyclic();
 		}
+#endif
 	}
 	else
 	{

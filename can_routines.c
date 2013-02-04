@@ -121,20 +121,62 @@ void can_status_relais(void)
 	can_routines_send_msg(MSG_STATUS_RELAIS, own_address, data,1,0);
 }
 
-void can_status_relais_eeprom(void)
+void can_config_get(uint8_t id)
 {
-//	uint8_t data[5];
-//	uint8_t i;
-//
-//	for(i=0;i<6;i++)
-//	{
-//		data[0] = MSG_COMMAND_STATUS;
-//		//data[1] = address;
-//		data[2] = MSG_STATUS_EEPROM_RELAIS1 + i;
-//		data[3] = relais_addresses[i];
-//		data[4] = relais_relais[i];
-//		can_routines_send_msg(data,5,1);
-//	}
+	uint8_t data[2];
+	uint8_t i;
+
+	data[0] = id;
+
+	switch(id)
+	{
+		case CONF_NODE_ADDRESS:
+			data[1] = own_address;
+			break;
+		case CONF_BUTTON_1_ADDRESS:
+			data[1] = relais_addresses[0];
+			break;
+		case CONF_BUTTON_1_RELAIS:
+			data[1] = relais_relais[0];
+			break;
+		case CONF_BUTTON_2_ADDRESS:
+			data[1] = relais_addresses[1];
+			break;
+		case CONF_BUTTON_2_RELAIS:
+			data[1] = relais_relais[1];
+			break;
+		case CONF_BUTTON_3_ADDRESS:
+			data[1] = relais_addresses[2];
+			break;
+		case CONF_BUTTON_3_RELAIS:
+			data[1] = relais_relais[2];
+			break;
+		case CONF_BUTTON_4_ADDRESS:
+			data[1] = relais_addresses[3];
+			break;
+		case CONF_BUTTON_4_RELAIS:
+			data[1] = relais_relais[3];
+			break;
+		case CONF_BUTTON_5_ADDRESS:
+			data[1] = relais_addresses[4];
+			break;
+		case CONF_BUTTON_5_RELAIS:
+			data[1] = relais_relais[4];
+			break;
+		case CONF_BUTTON_6_ADDRESS:
+			data[1] = relais_addresses[5];
+			break;
+		case CONF_BUTTON_6_RELAIS:
+			data[1] = relais_relais[5];
+			break;
+		case CONF_BANDGAP:
+			data[1] = bandgap;
+			break;
+		case CONF_MODE:
+			data[1] = mode;
+			break;
+	}
+	can_routines_send_msg(MSG_STATUS_CONFIG, own_address, data,2,0);
 }
 
 void can_status_uptime(void)
@@ -288,20 +330,13 @@ void can_parse_msg(can_t *msg)
 						break;
 					case CONF_MODE:
 						eeprom_set_uart_master(msg->data[1]);
-						cli();
-						reset();
 						break;
 				}
 				break;
-			case MSG_CMD_CONFIG_GET: // TBD
-				switch(msg->data[0])
-				{
-					case CONF_MODE:
-						break;
-					case CONF_BUTTON_1_ADDRESS:
-						can_status_relais_eeprom();
-						break;
-				}
+			case MSG_CMD_CONFIG_GET:
+				if(msg->length != 1)
+					break;
+				can_config_get(msg->data[0]);
 				break;
 			case MSG_HR20_SET_T:
 				if(msg->length != 1)

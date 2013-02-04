@@ -19,7 +19,7 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#define VERSION 16
+#define VERSION 17
 
 #define UART_MASTER
 
