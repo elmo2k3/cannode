@@ -117,7 +117,7 @@ void adc_blubb_cyclic() // every 25ms
 	}
 	if(adc_blubb_edge_detected == 1)
 	{
-		if(++adc_blubb_time_detected > 10)
+		if(++adc_blubb_time_detected > 30)
 		{
 			adc_blubb_time_detected = 0;
 			adc_blubb_edge_detected = 0;

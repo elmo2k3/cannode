@@ -188,16 +188,17 @@ void can_status_uptime(void)
 	if(mode & MODE_BLUBB_COUNTER)
 	{
 #ifdef _WITH_BLUBB_COUNTER_
-		data[3] = ((0 >>24) & 0x0F) | (VERSION<<4); // put version number in highest nibble
-		data[4] = (0 >>16) & 0xFF;
-		data[5] = (adc_blubb_value >>8) & 0xFF;
-		data[6] = adc_blubb_value & 0xFF;
+		data[0] = VERSION;
+		data[1] = ((0 >>24) & 0xFF);
+		data[2] = (0 >>16) & 0xFF;
+		data[3] = (adc_blubb_value >>8) & 0xFF;
+		data[4] = adc_blubb_value & 0xFF;
 #endif
 	}
 	else
 	{
 		data[0] = VERSION;
-		data[1] = (uptime >>24) & 0x0F;
+		data[1] = (uptime >>24) & 0xFF;
 		data[2] = (uptime >>16) & 0xFF;
 		data[3] = (uptime >>8) & 0xFF;
 		data[4] = uptime & 0xFF;

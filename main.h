@@ -19,9 +19,7 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#define VERSION 17
-
-#define UART_MASTER
+#define VERSION 19
 
 extern volatile uint32_t uptime;
 extern volatile uint16_t uptime_miliseconds;

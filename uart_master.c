@@ -45,6 +45,7 @@ void uart_master_init(uint8_t activated)
 
 void uart_put_can_msg(can_t *msg)
 {
+#ifdef _WITH_UART_MASTER_
 	uint8_t i;
 
 	if(!uart_master_global_activated)
@@ -65,10 +66,12 @@ void uart_put_can_msg(can_t *msg)
 		uart_putc_hex(uptime_miliseconds & 0xFF);
 	}
 	uart_puts("\r");
+#endif
 }
 
 void uart_putc_id_hex(uint16_t c)
 {
+#ifdef _WITH_UART_MASTER_
 	char c1;
 
 	c1 = (c >> 8 & 0x0F) + 48;
@@ -85,6 +88,7 @@ void uart_putc_id_hex(uint16_t c)
 	if(c1 > 0x39)
 		c1 += 39;
 	uart_putc(c1);
+#endif
 }
 void uart_putc_hex(uint8_t c)
 {
@@ -103,6 +107,7 @@ void uart_putc_hex(uint8_t c)
 
 uint8_t hex_to_uint8(uint8_t msb, uint8_t lsb)
 {
+#ifdef _WITH_UART_MASTER_
 	if(msb > 0x39) // A-F
 		msb -= 7;
 	if(msb > 0x46) // a-f
@@ -114,6 +119,7 @@ uint8_t hex_to_uint8(uint8_t msb, uint8_t lsb)
 		lsb -= 32;
 	lsb -= 48; // downto binary value
 	return msb<<4 | lsb;
+#endif
 }
 
 uint16_t hex_to_uint16(uint8_t msb1, uint8_t lsb1, uint8_t msb2, uint8_t lsb2)
@@ -123,6 +129,7 @@ uint16_t hex_to_uint16(uint8_t msb1, uint8_t lsb1, uint8_t msb2, uint8_t lsb2)
 
 void uart_master_work()
 {
+#ifdef _WITH_UART_MASTER_
 	static can_t msg;
 	static uint8_t recv_counter = 0;
 	static uint8_t rxbuf[30];
@@ -364,5 +371,6 @@ void uart_master_work()
 //			}
 		//}
 	}
+#endif // with_uart_master
 }
 
